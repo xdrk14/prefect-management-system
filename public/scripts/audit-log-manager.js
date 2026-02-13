@@ -38,7 +38,7 @@ class AuditLogManager {
       }
 
       console.log(
-        '✅ Audit system initialized',
+        '[SUCCESS] Audit system initialized',
         this.isAccountsPage ? 'with UI' : 'background only'
       );
     } catch (error) {
@@ -281,34 +281,34 @@ class AuditLogManager {
     };
 
     const badges = {
-      login: `<span class="role-badge role-FULL_ACCESS_VIEW">🔐 User Login</span>`,
-      logout: `<span class="role-badge role-LIMITED_ACCESS_VIEW">🚪 User Logout</span>`,
-      user_created: `<span class="role-badge role-FULL_ACCESS_EDIT">👤 User Created</span>`,
-      user_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT">✏️ User Updated</span>`,
-      user_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;">🗑️ User Deleted</span>`,
-      role_changed: `<span class="role-badge role-FULL_ACCESS_EDIT">👑 Role Changed</span>`,
-      status_changed: `<span class="role-badge role-LIMITED_ACCESS_EDIT">🔄 Status Changed</span>`,
-      password_reset: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;">🔑 Password Reset</span>`,
-      data_export: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;">📊 Data Export</span>`,
-      system_error: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;">⚠️ System Error</span>`,
+      login: `<span class="role-badge role-FULL_ACCESS_VIEW"><i class="icon icon-login icon-white"></i> User Login</span>`,
+      logout: `<span class="role-badge role-LIMITED_ACCESS_VIEW"><i class="icon icon-logout icon-white"></i> User Logout</span>`,
+      user_created: `<span class="role-badge role-FULL_ACCESS_EDIT"><i class="icon icon-users icon-white"></i> User Created</span>`,
+      user_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT"><i class="icon icon-edit icon-white"></i> User Updated</span>`,
+      user_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;"><i class="icon icon-delete"></i> User Deleted</span>`,
+      role_changed: `<span class="role-badge role-FULL_ACCESS_EDIT"><i class="icon icon-users icon-white"></i> Role Changed</span>`,
+      status_changed: `<span class="role-badge role-LIMITED_ACCESS_EDIT"><i class="icon icon-spin icon-white"></i> Status Changed</span>`,
+      password_reset: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;"><i class="icon icon-key"></i> Password Reset</span>`,
+      data_export: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;"><i class="icon icon-export"></i> Data Export</span>`,
+      system_error: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;"><i class="icon icon-error"></i> System Error</span>`,
       // Prefect-related activities
-      prefect_created: `<span class="role-badge role-FULL_ACCESS_EDIT">👥 Prefect Added</span>`,
-      prefect_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT">✏️ Prefect Updated</span>`,
-      prefect_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;">🗑️ Prefect Deleted</span>`,
-      prefect_viewed: `<span class="role-badge role-LIMITED_ACCESS_VIEW">👀 Prefect Viewed</span>`,
-      offense_added: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;">⚠️ Offense Added</span>`,
+      prefect_created: `<span class="role-badge role-FULL_ACCESS_EDIT"><i class="icon icon-users icon-white"></i> Prefect Added</span>`,
+      prefect_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT"><i class="icon icon-edit icon-white"></i> Prefect Updated</span>`,
+      prefect_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;"><i class="icon icon-delete"></i> Prefect Deleted</span>`,
+      prefect_viewed: `<span class="role-badge role-LIMITED_ACCESS_VIEW"><i class="icon icon-view icon-white"></i> Prefect Viewed</span>`,
+      offense_added: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;"><i class="icon icon-offenses"></i> Offense Added</span>`,
       // Event-related activities
-      event_created: `<span class="role-badge role-FULL_ACCESS_EDIT">📅 Event Created</span>`,
-      event_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT">📝 Event Updated</span>`,
-      event_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;">🗑️ Event Deleted</span>`,
-      attendee_added: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;">➕ Attendee Added</span>`,
-      attendee_removed: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;">➖ Attendee Removed</span>`,
+      event_created: `<span class="role-badge role-FULL_ACCESS_EDIT"><i class="icon icon-events icon-white"></i> Event Created</span>`,
+      event_updated: `<span class="role-badge role-LIMITED_ACCESS_EDIT"><i class="icon icon-edit icon-white"></i> Event Updated</span>`,
+      event_deleted: `<span class="role-badge" style="background-color: #fee2e2; color: #dc2626;"><i class="icon icon-delete"></i> Event Deleted</span>`,
+      attendee_added: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;"><i class="icon icon-plus"></i> Attendee Added</span>`,
+      attendee_removed: `<span class="role-badge" style="background-color: #fef3c7; color: #d97706;"><i class="icon icon-minus"></i> Attendee Removed</span>`,
       // System activities
-      bulk_import: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;">📊 Bulk Import</span>`,
-      data_backup: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;">💾 Data Backup</span>`,
-      system_maintenance: `<span class="role-badge" style="background-color: #f3e8ff; color: #7c3aed;">🔧 System Maintenance</span>`,
-      test_manual: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;">🧪 Manual Test</span>`,
-      manual_test: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;">🧪 Test Entry</span>`,
+      bulk_import: `<span class="role-badge" style="background-color: #d1fae5; color: #059669;"><i class="icon icon-export"></i> Bulk Import</span>`,
+      data_backup: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;"><i class="icon icon-save icon-white"></i> Data Backup</span>`,
+      system_maintenance: `<span class="role-badge" style="background-color: #f3e8ff; color: #7c3aed;"><i class="icon icon-settings"></i> System Maintenance</span>`,
+      test_manual: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;"><i class="icon icon-info icon-white"></i> Manual Test</span>`,
+      manual_test: `<span class="role-badge" style="background-color: #e0e7ff; color: #3730a3;"><i class="icon icon-info icon-white"></i> Test Entry</span>`,
     };
 
     return (
@@ -319,10 +319,10 @@ class AuditLogManager {
 
   getStatusIcon(status) {
     const icons = {
-      success: `<span class="status-active">✅ Success</span>`,
-      failure: `<span class="status-disabled">❌ Failed</span>`,
-      warning: `<span class="status-pending">⚠️ Warning</span>`,
-      info: `<span class="status-active">ℹ️ Info</span>`,
+      success: `<span class="status-active">[SUCCESS] Success</span>`,
+      failure: `<span class="status-disabled">[FAILED] Failed</span>`,
+      warning: `<span class="status-pending">[WARNING] Warning</span>`,
+      info: `<span class="status-active">[INFO] Info</span>`,
     };
 
     return icons[status] || `<span class="status-pending">${status || 'Unknown'}</span>`;
@@ -613,7 +613,7 @@ class AuditLogManager {
   async logActivity(activity, details, additionalData = {}) {
     try {
       if (!this.auth || !this.db) {
-        console.log('🔍 Audit system not ready:', { auth: !!this.auth, db: !!this.db });
+        console.log('[INFO] Audit system not ready:', { auth: !!this.auth, db: !!this.db });
         return;
       }
 
@@ -656,13 +656,13 @@ class AuditLogManager {
         ...additionalData,
       };
 
-      console.log('🔍 Logging audit activity:', { activity, details, userEmail });
+      console.log('[INFO] Logging audit activity:', { activity, details, userEmail });
 
       await this.db.collection('auditLog').add(auditEntry);
 
-      console.log('✅ Audit entry logged successfully');
+      console.log('[SUCCESS] Audit entry logged successfully');
     } catch (error) {
-      console.error('❌ Error logging activity:', error);
+      console.error('[ERROR] Error logging activity:', error);
       // Don't throw error to avoid breaking the main functionality
     }
   }

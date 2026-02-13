@@ -29,45 +29,45 @@ app.use(
 // Your existing routes and middleware should remain unchanged
 // Just add the above configuration
 
-console.log('🔥 ==============================================');
-console.log('🎓 PREFECT MANAGEMENT SYSTEM - ULTRA SERVER');
-console.log('🔥 ==============================================');
-console.log(`📅 Started: ${new Date().toISOString()}`);
-console.log(`🖥️  Platform: ${os.platform()} ${os.arch()}`);
-console.log(`💾 Total Memory: ${Math.round(os.totalmem() / 1024 / 1024 / 1024)}GB`);
-console.log(`⚡ Free Memory: ${Math.round(os.freemem() / 1024 / 1024 / 1024)}GB`);
-console.log(`🖥️  CPU: ${os.cpus()[0].model}`);
-console.log(`🧮 CPU Cores: ${os.cpus().length}`);
-console.log(`📦 Node Version: ${process.version}`);
-console.log(`🔗 Process ID: ${process.pid}`);
+console.log('[FIRE] ==============================================');
+console.log('[INFO] PREFECT MANAGEMENT SYSTEM - ULTRA SERVER');
+console.log('[FIRE] ==============================================');
+console.log(`[DATE] Started: ${new Date().toISOString()}`);
+console.log(`[PLATFORM] Platform: ${os.platform()} ${os.arch()}`);
+console.log(`[MEM] Total Memory: ${Math.round(os.totalmem() / 1024 / 1024 / 1024)}GB`);
+console.log(`[MEM] Free Memory: ${Math.round(os.freemem() / 1024 / 1024 / 1024)}GB`);
+console.log(`[CPU] CPU: ${os.cpus()[0].model}`);
+console.log(`[CPU] CPU Cores: ${os.cpus().length}`);
+console.log(`[NODE] Node Version: ${process.version}`);
+console.log(`[PID] Process ID: ${process.pid}`);
 
 // Multi-CPU clustering for 30+ concurrent requests
 if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   const workers = Math.min(os.cpus().length, 8);
-  console.log('\n🚀 ===== CLUSTER MASTER INITIALIZATION =====');
-  console.log(`👨‍💼 Master Process: ${process.pid}`);
-  console.log(`⚡ Spawning ${workers} worker processes`);
-  console.log(`🎯 Target: Handle 30+ concurrent requests`);
+  console.log('\n[LAUNCH] ===== CLUSTER MASTER INITIALIZATION =====');
+  console.log(`[ADMIN] Master Process: ${process.pid}`);
+  console.log(`[SPAWN] Spawning ${workers} worker processes`);
+  console.log(`[TARGET] Target: Handle 30+ concurrent requests`);
 
   for (let i = 0; i < workers; i++) {
-    console.log(`🔄 Forking worker ${i + 1}/${workers}...`);
+    console.log(`[SYNC] Forking worker ${i + 1}/${workers}...`);
     cluster.fork();
   }
 
   cluster.on('exit', (worker, code, signal) => {
-    console.log(`💥 Worker ${worker.process.pid} died (${signal || code})`);
-    console.log(`🔄 Respawning worker...`);
+    console.log(`[ERROR] Worker ${worker.process.pid} died (${signal || code})`);
+    console.log(`[RETRY] Respawning worker...`);
     cluster.fork();
   });
 
   cluster.on('online', worker => {
-    console.log(`✅ Worker ${worker.process.pid} is online and ready`);
+    console.log(`[SUCCESS] Worker ${worker.process.pid} is online and ready`);
   });
 
-  console.log(`🎉 Cluster master setup complete!`);
+  console.log(`[SUCCESS] Cluster master setup complete!`);
 } else {
-  console.log('\n🏃‍♂️ ===== WORKER PROCESS INITIALIZATION =====');
-  console.log(`👷 Worker Process: ${process.pid}`);
+  console.log('\n[START] ===== WORKER PROCESS INITIALIZATION =====');
+  console.log(`[WORKER] Worker Process: ${process.pid}`);
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
 
   const app = express();
@@ -79,10 +79,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   const connectedClients = new Map();
   const updateBroadcast = new Map();
 
-  console.log('\n📡 ===== REAL-TIME UPDATE SYSTEM =====');
+  console.log('\n[WS] ===== REAL-TIME UPDATE SYSTEM =====');
   const PORT = process.env.PORT || 3000;
 
-  console.log('\n🛡️  ===== SECURITY SETUP =====');
+  console.log('\n[SECURITY] ===== SECURITY SETUP =====');
   // Security headers
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -94,7 +94,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     if (req.method === 'OPTIONS') return res.sendStatus(200);
     next();
   });
-  console.log('✅ Security headers configured');
+  console.log('[SUCCESS] Security headers configured');
   console.log('   - XSS Protection: Enabled');
   console.log('   - Frame Options: DENY');
   console.log('   - Content Type Options: nosniff');
@@ -115,28 +115,28 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     requests.set(ip, userRequests);
     next();
   });
-  console.log('✅ Rate limiting configured');
+  console.log('[SUCCESS] Rate limiting configured');
   console.log('   - Limit: 10,000 requests per 1 minute per IP');
   console.log('   - Window: 1 minute');
   console.log('   - Storage: In-memory Map');
-  console.log('   - ⚡ ULTRA HIGH PERFORMANCE MODE ENABLED ⚡');
+  console.log('   - [STATS] ULTRA HIGH PERFORMANCE MODE ENABLED [STATS]');
 
-  console.log('\n🔧 ===== MIDDLEWARE SETUP =====');
+  console.log('\n[MIDDLEWARE] ===== MIDDLEWARE SETUP =====');
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true }));
-  console.log('✅ Body parsing configured');
+  console.log('[SUCCESS] Body parsing configured');
   console.log('   - JSON limit: 10MB');
   console.log('   - URL encoded: Extended mode');
 
   app.use(express.static('public'));
   app.use('/styles', express.static('styles'));
   app.use('/sources', express.static('sources'));
-  console.log('✅ Static file serving configured');
+  console.log('[SUCCESS] Static file serving configured');
   console.log('   - Public directory: /public');
   console.log('   - Styles directory: /styles');
   console.log('   - Sources directory: /sources');
 
-  console.log('\n💾 ===== CACHE SYSTEM SETUP =====');
+  console.log('\n[CACHE] ===== CACHE SYSTEM SETUP =====');
   // Cache system
   const cache = new Map();
   const getCache = key => {
@@ -155,21 +155,21 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     };
     next();
   };
-  console.log('✅ In-memory cache system initialized');
+  console.log('[SUCCESS] In-memory cache system initialized');
   console.log('   - Type: Map-based with TTL');
   console.log('   - Default TTL: 5 minutes');
   console.log('   - Features: Auto-expiration, middleware integration');
 
   // ===== OPTIMIZED DATABASE POOL =====
-  console.log('\n🗄️  ===== ENHANCED DATABASE SETUP =====');
+  console.log('\n[DB] ===== ENHANCED DATABASE SETUP =====');
   const dbPool = [];
   const poolSize = Math.min(os.cpus().length * 2, 12); // Dynamic pool sizing
-  console.log(`🔄 Creating optimized database pool (${poolSize} connections)...`);
+  console.log(`[SYNC] Creating optimized database pool (${poolSize} connections)...`);
 
   for (let i = 0; i < poolSize; i++) {
     const db = new sqlite3.Database('./database/prefect_system.db', sqlite3.OPEN_READWRITE, err => {
       if (err) {
-        console.error(`❌ DB Connection ${i} failed:`, err.message);
+        console.error(`[ERROR] DB Connection ${i} failed:`, err.message);
       } else {
         // ENHANCED SQLite optimizations
         db.run(`
@@ -182,7 +182,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
                 PRAGMA page_size=32768;
                 PRAGMA optimize;
             `);
-        console.log(`✅ DB Connection ${i} optimized for ultra performance`);
+        console.log(`[SUCCESS] DB Connection ${i} optimized for ultra performance`);
       }
     });
     dbPool.push(db);
@@ -203,7 +203,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     dbIndex = (dbIndex + 1) % poolSize;
     return selectedDB;
   };
-  console.log('\n🛡️  ===== SQL SECURITY SETUP =====');
+  console.log('\n[SECURITY] ===== SQL SECURITY SETUP =====');
   // SQL injection protection & query helpers
   const sqlCheck = query =>
     /drop|delete(?!\s+from\s+\w+\s+where)|truncate|insert(?!\s+into\s+\w+\s*\()|update(?!\s+\w+\s+set)|create|alter|exec|union(?!\s+all\s+select)|--|\/\*/i.test(
@@ -221,7 +221,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
         err ? reject(err) : resolve({ lastID: this.lastID, changes: this.changes });
       });
     });
-  console.log('✅ SQL injection protection enabled');
+  console.log('[SUCCESS] SQL injection protection enabled');
   console.log('   - Dangerous patterns: Blocked');
   console.log('   - Parameterized queries: Enforced');
   console.log('   - Query validation: Active');
@@ -239,11 +239,11 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     })
   );
 
-  console.log('✅ Response compression enabled (gzip)');
+  console.log('[SUCCESS] Response compression enabled (gzip)');
   console.log('   - Level: 6 (optimized)');
   console.log('   - Threshold: 1KB');
   console.log('   - Expected transfer reduction: 50-70%');
-  console.log('\n🏠 ===== DATABASE SCHEMA SETUP =====');
+  console.log('\n[SCHEMA] ===== DATABASE SCHEMA SETUP =====');
   // Constants - Updated to include Central
   const HOUSES = ['Aquila', 'Cetus', 'Cygnus', 'Ursa', 'Central'];
   const TABLES = {
@@ -267,19 +267,19 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     central: ['Head Prefect', 'Deputy Head Prefect', 'Games Captain', 'Deputy Games Captain'],
   };
 
-  console.log('✅ House system configured');
+  console.log('[SUCCESS] House system configured');
   console.log(`   - Houses: ${HOUSES.join(', ')}`);
   console.log('   - Tables per house: 3 (Data, Offenses, Events)');
   console.log('   - Total data tables: 15 (5 houses × 3 tables)');
   console.log('   - Master tables: 2 (GeneralEvents, HouseEvents)');
   console.log('   - Grand total: 17 tables');
 
-  console.log('\n📊 ===== TABLE MAPPING =====');
+  console.log('\n[MAPPING] ===== TABLE MAPPING =====');
   Object.entries(TABLES).forEach(([house, tables]) => {
-    console.log(`   🏠 ${house}:`);
-    console.log(`      📋 Data: ${tables.data}`);
-    console.log(`      ⚖️  Offense: ${tables.offense}`);
-    console.log(`      🎉 Events: ${tables.events}`);
+    console.log(`   [HOUSE] ${house}:`);
+    console.log(`      [LIST] Data: ${tables.data}`);
+    console.log(`      [LIST] Offense: ${tables.offense}`);
+    console.log(`      [LIST] Events: ${tables.events}`);
   });
 
   const validateHouse = h => {
@@ -288,12 +288,12 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   };
   const clearCache = pattern => cache.forEach((v, k) => k.includes(pattern) && cache.delete(k));
 
-  console.log('\n🛠️  ===== UTILITY FUNCTIONS =====');
-  console.log('✅ House validation function loaded');
-  console.log('✅ Cache clearing function loaded');
-  console.log('✅ Helper functions initialized');
+  console.log('\n[INFO] ===== UTILITY FUNCTIONS =====');
+  console.log('[SUCCESS] House validation function loaded');
+  console.log('[SUCCESS] Cache clearing function loaded');
+  console.log('[SUCCESS] Helper functions initialized');
 
-  console.log('\n🌐 ===== API ROUTES REGISTRATION =====');
+  console.log('\n[API] ===== API ROUTES REGISTRATION =====');
   let routeCount = 0;
   // ===== BATCH REQUEST ENDPOINT (10x FASTER) =====
   app.post('/api/batch', async (req, res) => {
@@ -370,10 +370,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  console.log('🚀 Batch request endpoint added for 10x faster dashboard loading');
+  console.log('[LAUNCH] Batch request endpoint added for 10x faster dashboard loading');
 
   // PREFECT ROUTES - Updated to include W0Number and Class
-  console.log('📋 Registering PREFECT routes...');
+  console.log('[INFO] Registering PREFECT routes...');
   app.get('/api/prefects', cacheMiddleware(180000), async (req, res) => {
     try {
       const results = await Promise.all(
@@ -526,7 +526,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log(`   ✅ Prefect CRUD routes: ${routeCount - 8} registered`);
 
   // OFFENSE ROUTES - All existing functionality preserved
-  console.log('⚖️  Registering OFFENSE routes...');
+  console.log('[INFO] Registering OFFENSE routes...');
   const offenseStartCount = routeCount;
 
   app.get('/api/offenses', cacheMiddleware(300000), async (req, res) => {
@@ -627,7 +627,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log(`   ✅ Offense CRUD routes: ${routeCount - offenseStartCount} registered`);
 
   // GENERAL EVENTS TABLE - COMPLETE CRUD (unchanged)
-  console.log('🎉 Registering GENERAL EVENTS routes...');
+  console.log('[INFO] Registering GENERAL EVENTS routes...');
   const generalEventsStartCount = routeCount;
 
   app.get('/api/general-events', cacheMiddleware(900000), async (req, res) => {
@@ -798,7 +798,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
   console.log(`   ✅ General Events routes: ${routeCount - generalEventsStartCount} registered`);
 
-  console.log('🏠 Registering HOUSE EVENTS routes...');
+  console.log('[INFO] Registering HOUSE EVENTS routes...');
   const houseEventsStartCount = routeCount;
 
   // HOUSE EVENTS TABLE - COMPLETE CRUD
@@ -940,7 +940,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ House Events routes: ${routeCount - houseEventsStartCount} registered`);
+  console.log(`   [SUCCESS] House Events routes: ${routeCount - houseEventsStartCount} registered`);
 
   // COMBINED EVENTS OPERATIONS
   console.log('🔗 Registering COMBINED EVENTS routes...');
@@ -1037,10 +1037,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Combined Events routes: ${routeCount - combinedEventsStartCount} registered`);
+  console.log(`   [SUCCESS] Combined Events routes: ${routeCount - combinedEventsStartCount} registered`);
 
   // EVENT PARTICIPATION TABLES ROUTES (Updated with new schema joins)
-  console.log('🎯 Registering EVENT PARTICIPATION routes...');
+  console.log('[TARGET] Registering EVENT PARTICIPATION routes...');
   const participationStartCount = routeCount;
 
   // Get all participation records for all houses (Updated to include W0Number and Class)
@@ -1229,21 +1229,21 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
   console.log(
-    `   ✅ Event Participation routes: ${routeCount - participationStartCount} registered`
+    `   [SUCCESS] Event Participation routes: ${routeCount - participationStartCount} registered`
   );
 
   // ANALYTICS ROUTES - Updated to include new schema fields
-  console.log('📊 Registering ANALYTICS routes...');
+  console.log('[STATS] Registering ANALYTICS routes...');
   // ADD THIS ENTIRE BLOCK RIGHT BEFORE: console.log('📊 Registering ANALYTICS routes...');
 
-  console.log('📡 Registering REAL-TIME UPDATE routes...');
+  console.log('[CONNECT] Registering REAL-TIME UPDATE routes...');
   const realTimeStartCount = routeCount;
 
   // SSE endpoint for real-time updates
   app.get('/api/sse/updates', (req, res) => {
     const { userId, page, timestamp } = req.query;
 
-    console.log(`📡 SSE Connection: ${userId} on page ${page}`);
+    console.log(`[CONNECT] SSE Connection: ${userId} on page ${page}`);
 
     // Set SSE headers
     res.writeHead(200, {
@@ -1291,12 +1291,12 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
     // Handle client disconnect
     req.on('close', () => {
-      console.log(`📡 SSE Disconnected: ${userId}`);
+      console.log(`[CONNECT] SSE Disconnected: ${userId}`);
       connectedClients.delete(userId);
     });
 
     req.on('error', error => {
-      console.error(`❌ SSE Error for ${userId}:`, error);
+      console.error(`[ERROR] SSE Error for ${userId}:`, error);
       connectedClients.delete(userId);
     });
   });
@@ -1306,7 +1306,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   app.post('/api/sse/broadcast', (req, res) => {
     const update = req.body;
 
-    console.log(`📤 Broadcasting update:`, update);
+    console.log(`[BROADCAST] Broadcasting update:`, update);
 
     // Store update in broadcast history
     const updateKey = `${update.type}_${update.timestamp}`;
@@ -1328,7 +1328,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
           client.lastPing = Date.now();
           broadcastCount++;
         } catch (error) {
-          console.error(`❌ Failed to send to client ${clientId}:`, error);
+          console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
           connectedClients.delete(clientId);
         }
       }
@@ -1343,7 +1343,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     const userId = req.query.userId;
     const page = req.query.page;
 
-    console.log(`🔌 WebSocket Connection: ${userId} on page ${page}`);
+    console.log(`[WS] WebSocket Connection: ${userId} on page ${page}`);
 
     const clientInfo = {
       id: userId,
@@ -1380,7 +1380,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     ws.on('message', message => {
       try {
         const update = JSON.parse(message);
-        console.log(`📤 WebSocket update from ${userId}:`, update);
+        console.log(`[BROADCAST] WebSocket update from ${userId}:`, update);
 
         // Store and broadcast update
         const updateKey = `${update.type}_${update.timestamp}`;
@@ -1401,25 +1401,25 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
               }
               client.lastPing = Date.now();
             } catch (error) {
-              console.error(`❌ Failed to send to client ${clientId}:`, error);
+              console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
               connectedClients.delete(clientId);
             }
           }
         });
 
-        console.log(`📤 Update broadcast to ${broadcastCount} clients`);
+        console.log(`[BROADCAST] Update broadcast to ${broadcastCount} clients`);
       } catch (error) {
-        console.error('❌ Error processing WebSocket message:', error);
+        console.error('[ERROR] Error processing WebSocket message:', error);
       }
     });
 
     ws.on('close', () => {
-      console.log(`🔌 WebSocket Disconnected: ${userId}`);
+      console.log(`[WS] WebSocket Disconnected: ${userId}`);
       connectedClients.delete(userId);
     });
 
     ws.on('error', error => {
-      console.error(`❌ WebSocket Error for ${userId}:`, error);
+      console.error(`[ERROR] WebSocket Error for ${userId}:`, error);
       connectedClients.delete(userId);
     });
   });
@@ -1435,7 +1435,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
       const timeSinceLastPing = now - client.lastPing;
       if (timeSinceLastPing > 60000) {
         // 1 minute timeout
-        console.log(`🧹 Cleaning up stale connection: ${clientId}`);
+        console.log(`[CLEAN] Cleaning up stale connection: ${clientId}`);
         connectedClients.delete(clientId);
       } else {
         activeClients.push({
@@ -1467,7 +1467,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
         }
         client.lastPing = now;
       } catch (error) {
-        console.error(`❌ Heartbeat failed for ${clientId}:`, error);
+        console.error(`[ERROR] Heartbeat failed for ${clientId}:`, error);
         connectedClients.delete(clientId);
       }
     });
@@ -1525,7 +1525,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
             refreshCount++;
           }
         } catch (error) {
-          console.error(`❌ Failed to send refresh to client ${clientId}:`, error);
+          console.error(`[ERROR] Failed to send refresh to client ${clientId}:`, error);
           connectedClients.delete(clientId);
         }
       }
@@ -1539,7 +1539,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  console.log(`   ✅ Real-time update routes: ${routeCount - realTimeStartCount} registered`);
+  console.log(`   [SUCCESS] Real-time update routes: ${routeCount - realTimeStartCount} registered`);
 
   // CONTINUE WITH EXISTING ANALYTICS ROUTES BELOW THIS LINE
   const analyticsStartCount = routeCount;
@@ -1744,10 +1744,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   );
   routeCount++;
-  console.log(`   ✅ Analytics routes: ${routeCount - analyticsStartCount} registered`);
+  console.log(`   [SUCCESS] Analytics routes: ${routeCount - analyticsStartCount} registered`);
   // Add these new API endpoints to your existing server.js file
   // EDIT MANAGER API ENDPOINTS
-  console.log('🔧 Registering EDIT MANAGER routes...');
+  console.log('[INFO] Registering EDIT MANAGER routes...');
   const editManagerStartCount = routeCount;
 
   // Get single prefect with all related data (offenses, events)
@@ -1945,9 +1945,9 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  console.log(`   ✅ Edit Manager routes: ${routeCount - editManagerStartCount} registered`);
+  console.log(`   [SUCCESS] Edit Manager routes: ${routeCount - editManagerStartCount} registered`);
 
-  console.log('🔍 Registering SEARCH routes...');
+  console.log('[INFO] Registering SEARCH routes...');
   const searchStartCount = routeCount;
 
   // ... REST OF YOUR EXISTING ROUTES CONTINUE HERE ...
@@ -2071,10 +2071,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Search routes: ${routeCount - searchStartCount} registered`);
+  console.log(`   [SUCCESS] Search routes: ${routeCount - searchStartCount} registered`);
 
   // UTILITY ROUTES - Updated to include new schema in responses
-  console.log('🛠️  Registering UTILITY routes...');
+  console.log('[INFO] Registering UTILITY routes...');
   const utilityStartCount = routeCount;
 
   app.get('/api/health', (req, res) => {
@@ -2168,10 +2168,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Utility routes: ${routeCount - utilityStartCount} registered`);
+  console.log(`   [SUCCESS] Utility routes: ${routeCount - utilityStartCount} registered`);
 
   // BULK OPERATIONS - Updated to include new schema fields
-  console.log('📦 Registering BULK OPERATION routes...');
+  console.log('[INFO] Registering BULK OPERATION routes...');
   const bulkStartCount = routeCount;
 
   // Updated bulk prefects to include W0Number and Class
@@ -2236,10 +2236,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Bulk Operation routes: ${routeCount - bulkStartCount} registered`);
+  console.log(`   [SUCCESS] Bulk Operation routes: ${routeCount - bulkStartCount} registered`);
 
   // POSITION-SPECIFIC ROUTES - Updated for new schema
-  console.log('👥 Registering POSITION-SPECIFIC routes...');
+  console.log('[INFO] Registering POSITION-SPECIFIC routes...');
   const positionStartCount = routeCount;
 
   app.get('/api/prefects/:house/position/:position', cacheMiddleware(300000), async (req, res) => {
@@ -2312,10 +2312,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Position-specific routes: ${routeCount - positionStartCount} registered`);
+  console.log(`   [SUCCESS] Position-specific routes: ${routeCount - positionStartCount} registered`);
 
   // LEGACY PARTICIPATION ROUTES (for backward compatibility) - Updated
-  console.log('🔄 Registering LEGACY PARTICIPATION routes...');
+  console.log('[INFO] Registering LEGACY PARTICIPATION routes...');
   const legacyStartCount = routeCount;
 
   app.get('/api/participation/:house', cacheMiddleware(600000), async (req, res) => {
@@ -2402,10 +2402,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     }
   });
   routeCount++;
-  console.log(`   ✅ Legacy Participation routes: ${routeCount - legacyStartCount} registered`);
+  console.log(`   [SUCCESS] Legacy Participation routes: ${routeCount - legacyStartCount} registered`);
 
   // STATIC ROUTES - Updated to include Central
-  console.log('🌐 Registering STATIC routes...');
+  console.log('[INFO] Registering STATIC routes...');
   const staticStartCount = routeCount;
 
   ['/', '/dashboard', '/main', '/events', '/accounts'].forEach(route => {
@@ -2422,7 +2422,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     });
     routeCount++;
   });
-  console.log(`   ✅ Static routes: ${routeCount - staticStartCount} registered`);
+  console.log(`   [SUCCESS] Static routes: ${routeCount - staticStartCount} registered`);
 
   // ERROR HANDLING
   app.use((err, req, res, next) => {
@@ -2434,12 +2434,12 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     res.status(404).json({ error: 'Route not found' });
   });
 
-  console.log('\n🎯 ===== FINAL INITIALIZATION =====');
+  console.log('\n[TARGET] ===== FINAL INITIALIZATION =====');
   // Real-time heartbeat interval
   setInterval(() => {
     const activeConnections = connectedClients.size;
     if (activeConnections > 0) {
-      console.log(`💓 Heartbeat: ${activeConnections} active connections`);
+      console.log(`[HEARTBEAT] Heartbeat: ${activeConnections} active connections`);
     }
 
     // Clean up old updates (keep last 100)
@@ -2453,24 +2453,24 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
         updateBroadcast.set(key, value);
       });
 
-      console.log('🧹 Cleaned up old real-time updates');
+      console.log('[CLEAN] Cleaned up old real-time updates');
     }
   }, 5000); // Every 30 seconds
   // START SERVER
   app.listen(PORT, () => {
-    console.log('\n🎉 ===== SERVER SUCCESSFULLY STARTED =====');
-    console.log(`🚀 Server Status: ONLINE`);
-    console.log(`🌐 Server URL: http://localhost:${PORT}`);
-    console.log(`👷 Worker Process: ${process.pid}`);
-    console.log(`🏠 Houses Available: ${HOUSES.join(', ')}`);
-    console.log(`📋 Total API Routes: ${routeCount} endpoints`);
-    console.log(`💾 Cache System: Active (In-Memory Map)`);
-    console.log(`🗄️  Database Pool: ${dbPool.length} connections`);
-    console.log(`🛡️  Security: SQL Injection Protection, Rate Limiting, CORS`);
-    console.log(`⚡ Performance: Multi-CPU Clustering, Connection Pooling`);
-    console.log(`📊 Features: CRUD Operations, Analytics, Search, Bulk Operations`);
-    console.log('\n🎯 ===== AVAILABLE ENDPOINTS =====');
-    console.log('📋 Prefects (Updated with W0Number & Class):');
+    console.log('\n[SUCCESS] ===== SERVER SUCCESSFULLY STARTED =====');
+    console.log(`[LAUNCH] Server Status: ONLINE`);
+    console.log(`[URL] Server URL: http://localhost:${PORT}`);
+    console.log(`[WORKER] Worker Process: ${process.pid}`);
+    console.log(`[HOUSE] Houses Available: ${HOUSES.join(', ')}`);
+    console.log(`[ID] Total API Routes: ${routeCount} endpoints`);
+    console.log(`[DB] Cache System: Active (In-Memory Map)`);
+    console.log(`[DB] Database Pool: ${dbPool.length} connections`);
+    console.log(`[SECURITY] Security: SQL Injection Protection, Rate Limiting, CORS`);
+    console.log(`[STATS] Performance: Multi-CPU Clustering, Connection Pooling`);
+    console.log(`[INFO] Features: CRUD Operations, Analytics, Search, Bulk Operations`);
+    console.log('\n[TARGET] ===== AVAILABLE ENDPOINTS =====');
+    console.log('[LIST] Prefects (Updated with W0Number & Class):');
     console.log('   GET    /api/prefects');
     console.log('   GET    /api/prefects/:house');
     console.log('   GET    /api/prefects/:house/:id');
@@ -2480,24 +2480,24 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     console.log('   POST   /api/prefects/:house');
     console.log('   PUT    /api/prefects/:house/:id');
     console.log('   DELETE /api/prefects/:house/:id');
-    console.log('⚖️  Offenses:');
+    console.log('[INFO] Offenses:');
     console.log('   GET    /api/offenses');
     console.log('   GET    /api/offenses/:house');
     console.log('   GET    /api/offenses/:house/:prefectId');
     console.log('   POST   /api/offenses/:house');
     console.log('   PUT    /api/offenses/:house/:prefectId/:date');
     console.log('   DELETE /api/offenses/:house/:prefectId/:date');
-    console.log('🎉 Events:');
+    console.log('[INFO] Events:');
     console.log('   GET    /api/general-events');
     console.log('   GET    /api/house-events');
     console.log('   GET    /api/all-events');
     console.log('   POST   /api/general-events');
     console.log('   POST   /api/house-events');
-    console.log('🔄 Event Participation:');
+    console.log('[INFO] Event Participation:');
     console.log('   GET    /api/events-participation/:house');
     console.log('   POST   /api/events-participation/:house');
     console.log('   DELETE /api/events-participation/:house/:prefectId/:eventType/:eventId');
-    console.log('📊 Analytics (Enhanced):');
+    console.log('[INFO] Analytics (Enhanced):');
     console.log('   GET    /api/dashboard/stats');
     console.log('   GET    /api/dashboard/performance');
     console.log('   GET    /api/dashboard/recent');
@@ -2505,36 +2505,36 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     console.log('   GET    /api/analytics/most-active');
     console.log('   GET    /api/analytics/grade-distribution/:house');
     console.log('   GET    /api/analytics/position-distribution/:house');
-    console.log('🔍 Search (Enhanced):');
+    console.log('[INFO] Search (Enhanced):');
     console.log('   GET    /api/search/prefects?q=...&grade=...');
     console.log('   GET    /api/search/offenses?q=...');
     console.log('   GET    /api/search/events?q=...');
     console.log('   GET    /api/search/w0number/:w0number');
     console.log('   GET    /api/search/class/:class');
-    console.log('🛠️  Utilities (Enhanced):');
+    console.log('[INFO] Utilities (Enhanced):');
     console.log('   GET    /api/health');
     console.log('   GET    /api/schema');
     console.log('   GET    /api/utility/w0numbers-in-use');
     console.log('   GET    /api/utility/classes-in-use');
     console.log('   POST   /api/cache/clear');
-    console.log('👥 Positions:');
+    console.log('[INFO] Positions:');
     console.log('   GET    /api/prefects/:house/position/:position');
     console.log('   GET    /api/positions/summary');
-    console.log('\n🎯 ===== NEW SCHEMA FEATURES =====');
-    console.log('🆕 W0Number Support:');
+    console.log('\n[TARGET] ===== NEW SCHEMA FEATURES =====');
+    console.log('[INFO] W0Number Support:');
     console.log('   - Search by W0Number: /api/search/w0number/W00100');
     console.log('   - W0Numbers in use: /api/utility/w0numbers-in-use');
-    console.log('🆕 Class Support:');
+    console.log('[INFO] Class Support:');
     console.log('   - Filter by class: /api/prefects/:house/class/11%20Sci%20A');
     console.log('   - Filter by grade: /api/prefects/:house/grade/11');
     console.log('   - Classes in use: /api/utility/classes-in-use');
-    console.log('🆕 Enhanced Analytics:');
+    console.log('[INFO] Enhanced Analytics:');
     console.log('   - Grade distribution: /api/analytics/grade-distribution/:house');
     console.log('   - Position distribution: /api/analytics/position-distribution/:house');
-    console.log('🆕 Central Team Support:');
+    console.log('[INFO] Central Team Support:');
     console.log('   - Central house included in all operations');
     console.log('   - Separate position types for Central team');
-    console.log('\n🎯 ===== QUICK TEST COMMANDS =====');
+    console.log('\n[TARGET] ===== QUICK TEST COMMANDS =====');
     console.log('Health Check:');
     console.log(`   curl http://localhost:${PORT}/api/health`);
     console.log('Get Schema (Updated):');
@@ -2547,45 +2547,45 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     console.log(`   curl http://localhost:${PORT}/api/utility/classes-in-use`);
     console.log('Grade Distribution:');
     console.log(`   curl http://localhost:${PORT}/api/analytics/grade-distribution/aquila`);
-    console.log('\n✅ ===== PREFECT MANAGEMENT SYSTEM READY =====');
-    console.log('🎓 Enterprise-Grade School Management System');
-    console.log('🔥 Ultra-Fast • Multi-CPU • Secure • Scalable');
-    console.log('🆕 Updated with Enhanced Schema Support');
-    console.log('📚 W0Number • Class • Grade • Central Team');
+    console.log('\n[SUCCESS] ===== PREFECT MANAGEMENT SYSTEM READY =====');
+    console.log('[INFO] Enterprise-Grade School Management System');
+    console.log('[STATS] Ultra-Fast [STATS] Multi-CPU [STATS] Secure [STATS] Scalable');
+    console.log('[INFO] Updated with Enhanced Schema Support');
+    console.log('[LIST] W0Number [LIST] Class [LIST] Grade [LIST] Central Team');
     console.log('==============================================');
-    console.log('📡 Real-time Updates:');
-    console.log('   📡 SSE: GET /api/sse/updates');
-    console.log('   📤 Broadcast: POST /api/sse/broadcast');
-    console.log('   🔌 WebSocket: WS /ws/updates');
-    console.log('   💓 Heartbeat: GET /api/sse/heartbeat');
-    console.log('   📊 Stats: GET /api/sse/stats');
-    console.log('   🔄 Force Refresh: POST /api/sse/force-refresh');
+    console.log('[CONNECT] Real-time Updates:');
+    console.log('   [CONNECT] SSE: GET /api/sse/updates');
+    console.log('   [BROADCAST] Broadcast: POST /api/sse/broadcast');
+    console.log('   [WS] WebSocket: WS /ws/updates');
+    console.log('   [HEARTBEAT] Heartbeat: GET /api/sse/heartbeat');
+    console.log('   [STATS] Stats: GET /api/sse/stats');
+    console.log('   [SYNC] Force Refresh: POST /api/sse/force-refresh');
   });
 
   // GRACEFUL SHUTDOWN
   const shutdown = () => {
-    console.log('\n🔄 ===== GRACEFUL SHUTDOWN INITIATED =====');
-    console.log(`📅 Shutdown Time: ${new Date().toISOString()}`);
-    console.log(`⏱️  Uptime: ${Math.round(process.uptime())} seconds`);
-    console.log(`💾 Cache Entries: ${cache.size}`);
-    console.log('🗄️  Closing database connections...');
+    console.log('\n[SYNC] ===== GRACEFUL SHUTDOWN INITIATED =====');
+    console.log(`[DATE] Shutdown Time: ${new Date().toISOString()}`);
+    console.log(`[STATS] Uptime: ${Math.round(process.uptime())} seconds`);
+    console.log(`[DB] Cache Entries: ${cache.size}`);
+    console.log('[DB] Closing database connections...');
 
     Promise.all(
       dbPool.map(
         (db, index) =>
           new Promise(resolve => {
             db.close(err => {
-              if (err) console.error(`❌ DB ${index} close error:`, err.message);
-              else console.log(`✅ DB ${index} connection closed`);
+              if (err) console.error(`[ERROR] DB ${index} close error:`, err.message);
+              else console.log(`[SUCCESS] DB ${index} connection closed`);
               resolve();
             });
           })
       )
     )
       .then(() => {
-        console.log('✅ All database connections closed successfully');
-        console.log('🎉 Graceful shutdown completed');
-        console.log('👋 Goodbye!');
+        console.log('[SUCCESS] All database connections closed successfully');
+        console.log('[SUCCESS] Graceful shutdown completed');
+        console.log('[INFO] Goodbye!');
         process.exit(0);
       })
       .catch(err => {

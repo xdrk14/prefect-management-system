@@ -1,15 +1,15 @@
-// 🚀 ULTRA-FAST Edit Manager - Complete Rewrite with Instant Loading & Optimized Deletion
+// [LAUNCH] ULTRA-FAST Edit Manager - Complete Rewrite with Instant Loading & Optimized Deletion
 // This guard clause checks if the script has already been run.
 if (typeof window.editManagerInitialized === 'undefined') {
   window.editManagerInitialized = true;
 
   /**
-   * 🚀 SECURE Authentication Helper Functions (Secure-First Approach) - OPTIMIZED
+   * [LAUNCH] SECURE Authentication Helper Functions (Secure-First Approach) - OPTIMIZED
    */
 
-  // 🔒 STRICT permission check - denies access until permissions are explicitly verified.
+  // [STRICT] STRICT permission check - denies access until permissions are explicitly verified.
   function hasEditPermission() {
-    // 🔒 Method 1: Check authSystem (most reliable source of truth)
+    // [STRICT] Method 1: Check authSystem (most reliable source of truth)
     if (window.authSystem && window.authSystem.userRole) {
       const userRole = window.authSystem.userRole;
       const hasEdit = userRole.includes('EDIT');
@@ -17,7 +17,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
       return hasEdit;
     }
 
-    // 🔒 Method 2: Check Firebase + cached role for quick access
+    // [STRICT] Method 2: Check Firebase + cached role for quick access
     if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
       const user = firebase.auth().currentUser;
       const cachedRole = localStorage.getItem(`userRole_${user.email}`);
@@ -34,12 +34,12 @@ if (typeof window.editManagerInitialized === 'undefined') {
       return false;
     }
 
-    // 🔒 DEFAULT TO FALSE - No permission if not logged in or auth not ready.
+    // [STRICT] DEFAULT TO FALSE - No permission if not logged in or auth not ready.
     console.log('[STRICT-EDIT] No valid authentication found. Access denied.');
     return false;
   }
 
-  // 🚀 INSTANT auth check - MUCH faster version
+  // [LAUNCH] INSTANT auth check - MUCH faster version
   function checkAuthInstant(callback) {
     // Immediate check - most cases will pass here
     if (window.authSystem && window.authSystem.userRole) {
@@ -73,9 +73,9 @@ if (typeof window.editManagerInitialized === 'undefined') {
     quickCheck();
   }
 
-  // 🔒 INSTANT permission check for UI rendering - OPTIMIZED
+  // [STRICT] INSTANT permission check for UI rendering - OPTIMIZED
   function checkEditPermissionInstant() {
-    // 🔒 Method 1: Check if authSystem is loaded and has EDIT role.
+    // [STRICT] Method 1: Check if authSystem is loaded and has EDIT role.
     if (window.authSystem && window.authSystem.userRole) {
       const hasEdit = window.authSystem.userRole.includes('EDIT');
       console.log(
@@ -87,7 +87,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
       return hasEdit;
     }
 
-    // 🔒 Method 2: Check Firebase + cached role. This provides the instant load speed.
+    // [STRICT] Method 2: Check Firebase + cached role. This provides the instant load speed.
     if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser) {
       const user = firebase.auth().currentUser;
       const cachedRole = localStorage.getItem(`userRole_${user.email}`);
@@ -99,12 +99,12 @@ if (typeof window.editManagerInitialized === 'undefined') {
       }
     }
 
-    // 🔒 HIDE the button if not ready (faster than logging)
+    // [STRICT] HIDE the button if not ready (faster than logging)
     return false;
   }
 
   /**
-   * 🚀 INSTANT Edit Manager Extension for PrefectTableManager - OPTIMIZED
+   * [LAUNCH] INSTANT Edit Manager Extension for PrefectTableManager - OPTIMIZED
    */
 
   // Store reference to original methods BEFORE overriding them
@@ -112,7 +112,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
 
   // Extend the PrefectTableManager class with edit functionality
   Object.assign(PrefectTableManager.prototype, {
-    // 🔒 ULTRA-FAST edit manager initialization - instant buttons, minimal polling
+    // [STRICT] ULTRA-FAST edit manager initialization - instant buttons, minimal polling
     initEditManager() {
       console.log('[EDIT-MANAGER] Initializing with Ultra-Fast security.');
 
@@ -180,7 +180,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
       setTimeout(verifyLiveAuth, 0);
     },
 
-    // 🚀 OPTIMIZED Load events in background - with better error handling
+    // [LAUNCH] OPTIMIZED Load events in background - with better error handling
     loadEventsInBackground() {
       console.log('[EDIT-MANAGER] Loading events in background...');
 
@@ -193,18 +193,18 @@ if (typeof window.editManagerInitialized === 'undefined') {
             this.generalEvents = await generalResult.value.json();
           } else {
             this.generalEvents = [];
-            console.log('[EDIT-MANAGER] ⚠️ Failed to load general events');
+            console.log('[EDIT-MANAGER] [WARNING] Failed to load general events');
           }
 
           if (houseResult.status === 'fulfilled' && houseResult.value.ok) {
             this.houseEvents = await houseResult.value.json();
           } else {
             this.houseEvents = [];
-            console.log('[EDIT-MANAGER] ⚠️ Failed to load house events');
+            console.log('[EDIT-MANAGER] [WARNING] Failed to load house events');
           }
 
           console.log(
-            '[EDIT-MANAGER] ✅ Events loaded:',
+            '[EDIT-MANAGER] [SUCCESS] Events loaded:',
             this.generalEvents.length,
             'general,',
             this.houseEvents.length,
@@ -212,7 +212,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
           );
         })
         .catch(error => {
-          console.log('[EDIT-MANAGER] ⚠️ Error loading events in background:', error);
+          console.log('[EDIT-MANAGER] [WARNING] Error loading events in background:', error);
           this.generalEvents = [];
           this.houseEvents = [];
         });
@@ -236,7 +236,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
 
       notification.innerHTML = `
                 <div style="display: flex; align-items: center;">
-                    <span style="margin-right: 8px;">🔒</span>
+                    <span style="margin-right: 8px;">[STRICT]</span>
                     <span><strong>Access Denied:</strong> You need edit permissions to modify prefect data</span>
                 </div>
             `;
@@ -299,11 +299,11 @@ if (typeof window.editManagerInitialized === 'undefined') {
       });
     },
 
-    // 🚀 ULTRA-FAST Show edit modal - instant auth check, minimal verification
+    // [LAUNCH] ULTRA-FAST Show edit modal - instant auth check, minimal verification
     async showEditModal(prefectId) {
       console.log('[EDIT-MANAGER] Edit modal requested for prefect:', prefectId);
 
-      // 🔒 INSTANT SECURITY CHECK - Block if no permission (no waiting)
+      // [STRICT] INSTANT SECURITY CHECK - Block if no permission (no waiting)
       if (!hasEditPermission()) {
         console.log('[SECURITY] Edit access denied - insufficient permissions');
         this.showNoEditPermissionMessage();
@@ -341,7 +341,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
         if (!hasEditPermission()) {
           console.log('[SECURITY] Final auth check failed - access denied');
           modalContent.innerHTML =
-            '<div class="text-center py-8 text-red-600"><div class="text-6xl mb-4">🔒</div><h3 class="text-xl font-bold mb-2">Access Denied</h3><p>You need edit permissions to modify prefect data.</p></div>';
+            '<div class="text-center py-8 text-red-600"><h3 class="text-xl font-bold mb-2">Access Denied</h3><p>You need edit permissions to modify prefect data.</p></div>';
           return;
         }
 
@@ -364,7 +364,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
         this.initFormHandlers();
       } catch (error) {
         console.error('[EDIT-MANAGER] Error loading prefect for edit:', error);
-        modalContent.innerHTML = `<div class="text-center py-8 text-red-600"><div class="text-6xl mb-4">❌</div><h3 class="text-xl font-bold mb-2">Error</h3><p>${error.message}</p><button onclick="prefectManager.closeEditModal()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded">Close</button></div>`;
+        modalContent.innerHTML = `<div class="text-center py-8 text-red-600"><h3 class="text-xl font-bold mb-2">Error</h3><p>${error.message}</p><button onclick="prefectManager.closeEditModal()" class="mt-4 bg-gray-500 text-white px-4 py-2 rounded">Close</button></div>`;
       }
     },
 
@@ -697,7 +697,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
       }
     },
 
-    // 🚀 ULTRA-FAST confirmation dialog - uses native browser confirm()
+    // [LAUNCH] ULTRA-FAST confirmation dialog - uses native browser confirm()
     showConfirmationFast(message, onConfirm) {
       if (confirm(message)) {
         onConfirm(true);
@@ -706,7 +706,7 @@ if (typeof window.editManagerInitialized === 'undefined') {
       }
     },
 
-    // 🚀 ULTRA-FAST prompt dialog - uses native browser prompt()
+    // [LAUNCH] ULTRA-FAST prompt dialog - uses native browser prompt()
     showPromptFast(message, onConfirm) {
       const result = prompt(message);
       onConfirm(result);
@@ -767,9 +767,9 @@ if (typeof window.editManagerInitialized === 'undefined') {
       input.focus();
     },
 
-    // 🚀 ULTRA-FAST Save all changes - minimal verification, instant execution
+    // [LAUNCH] ULTRA-FAST Save all changes - minimal verification, instant execution
     async saveAllChanges() {
-      // 🔒 INSTANT SECURITY CHECK - Block if no permission (no waiting)
+      // [STRICT] INSTANT SECURITY CHECK - Block if no permission (no waiting)
       if (!hasEditPermission()) {
         console.log('[SECURITY] Save blocked - no edit permission');
         this.showNoEditPermissionMessage();

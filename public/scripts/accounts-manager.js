@@ -136,9 +136,9 @@
       const result = await this.diagnoseFirebaseAuth();
 
       if (result) {
-        this.showToast('🔥 Firebase connection test passed!', 'success');
+        this.showToast('[FIRE] Firebase connection test passed!', 'success');
       } else {
-        this.showToast('⚠️ Firebase connection issues detected', 'warning');
+        this.showToast('[WARNING] Firebase connection issues detected', 'warning');
         this.checkFirebaseConsoleSettings();
       }
 
@@ -198,7 +198,7 @@
           );
           firebaseUser = userCredential.user;
 
-          console.log('[ACCOUNTS-MANAGER] ✅ Firebase Auth user created:', firebaseUser.uid);
+          console.log('[ACCOUNTS-MANAGER] [SUCCESS] Firebase Auth user created:', firebaseUser.uid);
 
           // Immediately sign out from secondary app to clean up
           await secondaryAuth.signOut();
@@ -245,7 +245,7 @@
         try {
           // This uses the main app where admin is still signed in
           await window.firebaseDb.collection('userRoles').doc(email).set(userRoleData);
-          console.log('[ACCOUNTS-MANAGER] ✅ Firestore profile created');
+          console.log('[ACCOUNTS-MANAGER] [SUCCESS] Firestore profile created');
         } catch (firestoreError) {
           console.error('[ACCOUNTS-MANAGER] Firestore creation failed:', firestoreError);
 
@@ -279,7 +279,7 @@
           `Created complete user account (Auth + Profile)`
         );
 
-        this.showToast(`✅ User account created successfully! User can now login.`, 'success');
+        this.showToast(`[SUCCESS] User account created successfully! User can now login.`, 'success');
         return {
           success: true,
           userData: userRoleData,
@@ -608,7 +608,7 @@
                 user.password
               );
               firebaseUser = userCredential.user;
-              console.log(`✅ Firebase Auth user created: ${user.email}`);
+              console.log(`[SUCCESS] Firebase Auth user created: ${user.email}`);
             } catch (authError) {
               if (authError.code === 'auth/email-already-in-use') {
                 console.log(
@@ -638,7 +638,7 @@
             };
 
             await window.firebaseDb.collection('userRoles').doc(user.email).set(userData);
-            console.log(`✅ Firestore profile created: ${user.email}`);
+            console.log(`[SUCCESS] Firestore profile created: ${user.email}`);
 
             successCount++;
           } catch (error) {
@@ -663,7 +663,7 @@
           );
         }
 
-        const message = `✅ Sample accounts created: ${successCount} new, ${skipCount} skipped, ${errorCount} errors`;
+        const message = `[SUCCESS] Sample accounts created: ${successCount} new, ${skipCount} skipped, ${errorCount} errors`;
         this.showToast(message, successCount > 0 ? 'success' : 'warning');
 
         if (successCount > 0) {

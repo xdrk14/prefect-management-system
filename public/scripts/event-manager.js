@@ -25,7 +25,7 @@ class EventManager {
   }
 
   async init() {
-    console.log('🚀 Initializing Event Management System...');
+    console.log('[LOAD] Initializing Event Management System...');
 
     // Set minimum date to today for new events
     const today = new Date().toISOString().split('T')[0];
@@ -40,14 +40,14 @@ class EventManager {
     // Setup periodic refresh
     this.setupPeriodicRefresh();
 
-    console.log('✅ Event Management System initialized successfully');
+    console.log('[SUCCESS] Event Management System initialized successfully');
   }
 
   async loadInitialData() {
     try {
       this.showLoadingState();
 
-      console.log('📥 Loading initial data...');
+      console.log('[LOAD] Loading initial data...');
 
       // Load all data in parallel
       const [events, prefects] = await Promise.all([
@@ -67,11 +67,11 @@ class EventManager {
       this.displayStatistics(stats);
       this.updateEventsCount(events.length);
 
-      console.log('✅ Initial data loaded successfully');
-      console.log('📊 Events loaded:', events.length);
-      console.log('👥 Prefects loaded:', prefects.length);
+      console.log('[SUCCESS] Initial data loaded successfully');
+      console.log('[INFO] Events loaded:', events.length);
+      console.log('[INFO] Prefects loaded:', prefects.length);
     } catch (error) {
-      console.error('❌ Failed to load initial data:', error);
+      console.error('[ERROR] Failed to load initial data:', error);
       this.showNotification('Failed to load event data. Please refresh the page.', 'error');
     }
   }
@@ -91,7 +91,7 @@ class EventManager {
       this.setCache(cacheKey, events, 300000); // 5 minutes
       return events;
     } catch (error) {
-      console.error('❌ Error fetching events:', error);
+      console.error('[ERROR] Error fetching events:', error);
       throw error;
     }
   }
@@ -124,14 +124,14 @@ class EventManager {
       this.setCache(cacheKey, allPrefects, 180000); // 3 minutes
       return allPrefects;
     } catch (error) {
-      console.error('❌ Error fetching prefects:', error);
+      console.error('[ERROR] Error fetching prefects:', error);
       throw error;
     }
   }
 
   async fetchEventStatistics() {
     try {
-      console.log('🔄 Calculating statistics with date+time logic...');
+      console.log('[LOAD] Calculating statistics with date+time logic...');
 
       // Get fresh events data
       this.clearEventCache();
@@ -140,8 +140,8 @@ class EventManager {
       // Get current date and time
       const now = new Date();
 
-      console.log('🕐 Current time:', now.toLocaleString());
-      console.log('📋 Total events to analyze:', allEvents.length);
+      console.log('[INFO] Current time:', now.toLocaleString());
+      console.log('[INFO] Total events to analyze:', allEvents.length);
 
       // Helper function to determine if event is truly upcoming
       const isEventUpcoming = event => {
@@ -217,14 +217,14 @@ class EventManager {
       });
 
       if (todayEvents.length > 0) {
-        console.log("📅 TODAY'S EVENTS ANALYSIS:");
+        console.log("[INFO] TODAY'S EVENTS ANALYSIS:");
         todayEvents.forEach(event => {
           const isUp = isEventUpcoming(event);
           console.log(`  • ${event.GeneralEventName || event.HouseEventName}`);
           console.log(`    Date: ${event.EventDateHeld}`);
           console.log(`    Start: ${event.TimeStarted || 'Not set'}`);
           console.log(`    End: ${event.TimeEnded || 'Not set'}`);
-          console.log(`    Status: ${isUp ? '🔮 UPCOMING' : '📅 PAST'}`);
+          console.log(`    Status: ${isUp ? '[UPCOMING]' : '[PAST]'}`);
         });
       }
 
@@ -247,14 +247,14 @@ class EventManager {
         },
       };
 
-      console.log('📊 SMART STATISTICS (Date + Time):');
-      console.log(`  🔮 Upcoming: ${stats.combined.upcomingEvents}`);
-      console.log(`  📅 Past: ${stats.combined.pastEvents}`);
-      console.log(`  📊 Total: ${stats.combined.totalEvents}`);
+      console.log('[INFO] SMART STATISTICS (Date + Time):');
+      console.log(`  [UPCOMING]: ${stats.combined.upcomingEvents}`);
+      console.log(`  [PAST]: ${stats.combined.pastEvents}`);
+      console.log(`  [INFO] Total: ${stats.combined.totalEvents}`);
 
       return stats;
     } catch (error) {
-      console.error('❌ Error calculating smart statistics:', error);
+      console.error('[ERROR] Error calculating smart statistics:', error);
       return {
         general: { totalEvents: 0, upcomingEvents: 0, pastEvents: 0 },
         house: { totalEvents: 0, upcomingEvents: 0, pastEvents: 0 },
@@ -298,10 +298,10 @@ class EventManager {
               status: 'success',
             }
           );
-          console.log('✅ Event creation logged to audit');
+          console.log('[SUCCESS] Event creation logged to audit');
         }
       } catch (auditError) {
-        console.log('⚠️ Failed to log event creation:', auditError);
+        console.log('[WARNING] Failed to log event creation:', auditError);
       }
 
       // Refresh both events and statistics
@@ -309,7 +309,7 @@ class EventManager {
 
       return result;
     } catch (error) {
-      console.error('❌ Error creating event:', error);
+      console.error('[ERROR] Error creating event:', error);
       throw error;
     }
   }
@@ -327,7 +327,7 @@ class EventManager {
         eventType: eventData.originalEventType, // Ensure event type is available for formatting
       });
 
-      console.log('🔧 Update payload:', payload); // Debug log
+      console.log('[CLEAN] Update payload:', payload); // Debug log
 
       const response = await fetch(endpoint, {
         method: 'PUT',
@@ -353,10 +353,10 @@ class EventManager {
               status: 'success',
             }
           );
-          console.log('✅ Event update logged to audit');
+          console.log('[SUCCESS] Event update logged to audit');
         }
       } catch (auditError) {
-        console.log('⚠️ Failed to log event update:', auditError);
+        console.log('[WARNING] Failed to log event update:', auditError);
       }
       // Clear cache and reload data
       this.clearEventCache();
@@ -364,18 +364,18 @@ class EventManager {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error updating event:', error);
+      console.error('[ERROR] Error updating event:', error);
       throw error;
     }
   }
 
   async deleteEvent(eventId, eventType) {
     try {
-      // FIXED: First get all attendees to warn user AND clear them before deletion
-      console.log('🗑️ Starting event deletion process for:', eventId, eventType);
+      // [DELETE] Starting event deletion process for:
+      console.log('[DELETE] Starting event deletion process for:', eventId, eventType);
 
       const attendees = await this.fetchEventAttendees(eventId, eventType);
-      console.log('👥 Found attendees:', attendees.length);
+      console.log('[INFO] Found attendees:', attendees.length);
 
       if (attendees.length > 0) {
         const confirmed = confirm(
@@ -386,13 +386,13 @@ class EventManager {
 
       // FIXED: Clear all attendees BEFORE deleting the event to avoid foreign key constraints
       if (attendees.length > 0) {
-        console.log('🧹 Clearing attendees before event deletion...');
+        console.log('[CLEAN] Clearing attendees before event deletion...');
         await this.clearAllEventAttendees(eventId, eventType, attendees);
-        console.log('✅ All attendees cleared successfully');
+        console.log('[SUCCESS] All attendees cleared successfully');
       }
 
-      // Now delete the actual event
-      console.log('🗑️ Proceeding to delete event...');
+      // [DELETE] Proceeding to delete event...
+      console.log('[DELETE] Proceeding to delete event...');
       const endpoint =
         eventType === 'general' ? `/api/general-events/${eventId}` : `/api/house-events/${eventId}`;
 
@@ -403,7 +403,7 @@ class EventManager {
         throw new Error(error.error || 'Failed to delete event');
       }
 
-      console.log('✅ Event deleted successfully');
+      console.log('[SUCCESS] Event deleted successfully');
 
       // Clear cache and reload data
       this.clearEventCache();
@@ -426,10 +426,10 @@ class EventManager {
             deletedAttendees: attendees.length,
             status: 'success',
           });
-          console.log('✅ Event deletion logged to audit');
+          console.log('[SUCCESS] Event deletion logged to audit');
         }
       } catch (auditError) {
-        console.log('⚠️ Failed to log event deletion:', auditError);
+        console.log('[WARNING] Failed to log event deletion:', auditError);
       }
 
       // Refresh both events and statistics
@@ -437,7 +437,7 @@ class EventManager {
 
       return true;
     } catch (error) {
-      console.error('❌ Error deleting event:', error);
+      console.error('[ERROR] Error deleting event:', error);
       throw error;
     }
   }
@@ -459,7 +459,7 @@ class EventManager {
     // Create deletion promises for each house
     for (const [house, houseAttendees] of Object.entries(attendeesByHouse)) {
       for (const attendee of houseAttendees) {
-        console.log(`🗑️ Queuing deletion: ${attendee.FullName} from ${house}`);
+        console.log(`[DELETE] Queuing deletion: ${attendee.FullName} from ${house}`);
 
         // Try primary endpoint first, then fallback
         const deletePromise = this.removeAttendeeWithFallback(
@@ -478,9 +478,7 @@ class EventManager {
     for (let i = 0; i < deletePromises.length; i += batchSize) {
       const batch = deletePromises.slice(i, i + batchSize);
       await Promise.all(batch);
-      console.log(
-        `✅ Processed deletion batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(deletePromises.length / batchSize)}`
-      );
+      console.log(`[SUCCESS] Processed deletion batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(deletePromises.length / batchSize)}`);
 
       // Small delay between batches to be gentle on the server
       if (i + batchSize < deletePromises.length) {
@@ -488,7 +486,7 @@ class EventManager {
       }
     }
 
-    console.log('✅ All attendees cleared successfully');
+    console.log('[SUCCESS] All attendees cleared successfully');
   }
 
   // FIXED: Enhanced attendee removal with better error handling and fallback
@@ -500,7 +498,7 @@ class EventManager {
 
       // If primary fails, try fallback endpoint
       if (!response.ok) {
-        console.log(`⚠️ Primary endpoint failed for ${prefectId}, trying fallback...`);
+        console.log(`[WARNING] Primary endpoint failed for ${prefectId}, trying fallback...`);
         endpoint = `${this.apiEndpoints.fallback}${house}/${prefectId}/${eventType}/${eventId}`;
         response = await fetch(endpoint, { method: 'DELETE' });
       }
@@ -509,15 +507,15 @@ class EventManager {
         // If both endpoints fail, log but don't throw to allow other deletions to continue
         const errorText = await response.text();
         console.warn(
-          `⚠️ Failed to remove attendee ${prefectId} from ${house}: ${response.status} ${errorText}`
+          `[WARNING] Failed to remove attendee ${prefectId} from ${house}: ${response.status} ${errorText}`
         );
         return { success: false, prefectId, error: `HTTP ${response.status}` };
       }
 
-      console.log(`✅ Successfully removed attendee ${prefectId} from ${house}`);
+      console.log(`[SUCCESS] Successfully removed attendee ${prefectId} from ${house}`);
       return { success: true, prefectId };
     } catch (error) {
-      console.warn(`⚠️ Error removing attendee ${prefectId} from ${house}:`, error.message);
+      console.warn(`[WARNING] Error removing attendee ${prefectId} from ${house}:`, error.message);
       return { success: false, prefectId, error: error.message };
     }
   }
@@ -532,7 +530,7 @@ class EventManager {
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
       const participantsByHouse = await response.json();
-      console.log('🔍 Raw participants data:', participantsByHouse);
+      console.log('[INFO] Raw participants data:', participantsByHouse);
 
       // Flatten the results - Updated to handle new schema
       const allParticipants = [];
@@ -550,10 +548,10 @@ class EventManager {
         }
       }
 
-      console.log('✅ Processed participants:', allParticipants.length, 'total');
+      console.log('[SUCCESS] Processed participants:', allParticipants.length, 'total');
       return allParticipants;
     } catch (error) {
-      console.error('❌ Error fetching attendees:', error);
+      console.error('[ERROR] Error fetching attendees:', error);
       return [];
     }
   }
@@ -593,7 +591,7 @@ class EventManager {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error adding attendee:', error);
+      console.error('[ERROR] Error adding attendee:', error);
       throw error;
     }
   }
@@ -619,7 +617,7 @@ class EventManager {
 
       return await response.json();
     } catch (error) {
-      console.error('❌ Error removing attendee:', error);
+      console.error('[ERROR] Error removing attendee:', error);
       throw error;
     }
   }
@@ -655,13 +653,13 @@ class EventManager {
       // Future date
       isUpcoming = true;
       isPast = false;
-      statusText = '🔮 Upcoming';
+      statusText = '<i class="icon icon-upcoming"></i> Upcoming';
       statusClass = 'bg-green-100 text-green-700';
     } else if (eventDateStr < today) {
       // Past date
       isUpcoming = false;
       isPast = true;
-      statusText = '📅 Past';
+      statusText = '<i class="icon icon-past"></i> Past';
       statusClass = 'bg-gray-200 text-gray-600';
     } else {
       // Today - check time
@@ -675,19 +673,19 @@ class EventManager {
           if (now < eventEndTime) {
             isUpcoming = true;
             isPast = false;
-            statusText = '🕐 Happening Today';
+            statusText = '<i class="icon icon-past"></i> Happening Today';
             statusClass = 'bg-blue-100 text-blue-700';
           } else {
             isUpcoming = false;
             isPast = true;
-            statusText = '✅ Finished Today';
+            statusText = '<i class="icon icon-success"></i> Finished Today';
             statusClass = 'bg-gray-200 text-gray-600';
           }
         } catch (e) {
           // Error parsing time, default to happening today
           isUpcoming = true;
           isPast = false;
-          statusText = '📅 Today';
+          statusText = '<i class="icon icon-events"></i> Today';
           statusClass = 'bg-yellow-100 text-yellow-700';
         }
       } else {
@@ -702,25 +700,25 @@ class EventManager {
             if (now < eventStartTime) {
               isUpcoming = true;
               isPast = false;
-              statusText = '⏰ Starting Today';
+              statusText = '<i class="icon icon-past"></i> Starting Today';
               statusClass = 'bg-orange-100 text-orange-700';
             } else {
               isUpcoming = true;
               isPast = false;
-              statusText = '🕐 Happening Today';
+              statusText = '<i class="icon icon-past"></i> Happening Today';
               statusClass = 'bg-blue-100 text-blue-700';
             }
           } catch (e) {
             isUpcoming = true;
             isPast = false;
-            statusText = '📅 Today';
+            statusText = '<i class="icon icon-events"></i> Today';
             statusClass = 'bg-yellow-100 text-yellow-700';
           }
         } else {
           // No time info, default to happening today
           isUpcoming = true;
           isPast = false;
-          statusText = '📅 Today';
+          statusText = '<i class="icon icon-events"></i> Today';
           statusClass = 'bg-yellow-100 text-yellow-700';
         }
       }
@@ -762,14 +760,14 @@ class EventManager {
         if (minutesUntilEnd > 0 && minutesUntilEnd <= 60) {
           additionalStatus = `
                     <div class="flex items-center gap-1 text-orange-600">
-                        <span>⏱️</span>
+                        <i class="icon icon-past" style="filter: invert(45%) sepia(87%) saturate(1514%) hue-rotate(3deg) brightness(101%) contrast(105%);"></i>
                         <span class="font-medium">${minutesUntilEnd} min left</span>
                     </div>
                 `;
         } else if (minutesUntilEnd <= 0 && minutesUntilEnd > -60) {
           additionalStatus = `
                     <div class="flex items-center gap-1 text-red-600">
-                        <span>⏹️</span>
+                        <i class="icon icon-error" style="filter: invert(16%) sepia(89%) saturate(6054%) hue-rotate(354deg) brightness(94%) contrast(121%);"></i>
                         <span class="font-medium">Just ended</span>
                     </div>
                 `;
@@ -792,16 +790,16 @@ class EventManager {
                 </div>
                 <div class="flex gap-2">
                     <button onclick="eventManager.editEvent('${eventId}', '${eventType}')" 
-                            class="btn btn-warning text-xs" title="Edit Event">
-                        ✏️ Edit
+                            class="btn btn-warning text-xs flex items-center gap-1" title="Edit Event">
+                        <i class="icon icon-edit"></i> Edit
                     </button>
                     <button onclick="eventManager.manageAttendance('${eventId}', '${eventType}', '${eventName.replace(/'/g, "\\'")}', '${eventDate}', '${timeDisplay}')" 
-                            class="btn btn-info text-xs" title="Manage Attendance">
-                        👥 Attendance
+                            class="btn btn-info text-xs flex items-center gap-1" title="Manage Attendance">
+                        <i class="icon icon-users"></i> Attendance
                     </button>
                     <button onclick="eventManager.showDeleteConfirmation('${eventId}', '${eventType}')" 
                             class="btn btn-danger text-xs" title="Delete Event">
-                        🗑️
+                        <i class="icon icon-delete"></i>
                     </button>
                 </div>
             </div>
@@ -810,18 +808,18 @@ class EventManager {
             
             <div class="flex flex-wrap gap-4 text-sm text-gray-600">
                 <div class="flex items-center gap-1">
-                    <span>🆔</span>
+                    <i class="icon icon-id"></i>
                     <span class="font-mono">${eventId}</span>
                 </div>
                 <div class="flex items-center gap-1">
-                    <span>📅</span>
+                    <i class="icon icon-calendar"></i>
                     <span>${new Date(eventDate).toLocaleDateString()}</span>
                 </div>
                 ${
                   timeDisplay
                     ? `
                     <div class="flex items-center gap-1">
-                        <span>⏰</span>
+                        <i class="icon icon-clock"></i>
                         <span>${timeDisplay}</span>
                     </div>
                 `
@@ -836,41 +834,41 @@ class EventManager {
   displayStatistics(stats) {
     const container = document.getElementById('statsContainer');
 
-    console.log('📊 Updating statistics display:', stats);
+    console.log('[STATS] Updating statistics display:', stats);
 
     // Enhanced statistics with better visual indicators
     container.innerHTML = `
             <div class="stat-card">
                 <div class="stat-value text-blue-600">${stats.combined.totalEvents}</div>
-                <div class="stat-label">📊 Total Events</div>
+                <div class="stat-label"><i class="icon icon-stats"></i> Total Events</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-green-600">${stats.general.totalEvents}</div>
-                <div class="stat-label">🏛️ General Events</div>
+                <div class="stat-label"><i class="icon icon-government"></i> General Events</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-purple-600">${stats.house.totalEvents}</div>
-                <div class="stat-label">🏠 House Events</div>
+                <div class="stat-label"><i class="icon icon-house"></i> House Events</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-orange-600">${stats.combined.upcomingEvents}</div>
-                <div class="stat-label">🕐 Upcoming</div>
+                <div class="stat-label"><i class="icon icon-clock"></i> Upcoming</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-gray-600">${stats.combined.pastEvents}</div>
-                <div class="stat-label">📅 Past Events</div>
+                <div class="stat-label"><i class="icon icon-calendar"></i> Past Events</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-indigo-600">${stats.general.upcomingEvents}</div>
-                <div class="stat-label">🔮 General Upcoming</div>
+                <div class="stat-label"><i class="icon icon-magic"></i> General Upcoming</div>
             </div>
             <div class="stat-card">
                 <div class="stat-value text-pink-600">${stats.house.upcomingEvents}</div>
-                <div class="stat-label">🏡 House Upcoming</div>
+                <div class="stat-label"><i class="icon icon-home"></i> House Upcoming</div>
             </div>
         `;
 
-    console.log('✅ Statistics display updated');
+    console.log('[SUCCESS] Statistics display updated');
 
     // Debug information
     console.log('🔍 Statistics breakdown:');
@@ -898,11 +896,11 @@ class EventManager {
   getEmptyStateHTML() {
     return `
             <div class="empty-state">
-                <div class="empty-state-icon">📅</div>
+                <div class="empty-state-icon"><i class="icon icon-calendar" style="width: 3em; height: 3em;"></i></div>
                 <h3 class="text-lg font-semibold text-gray-600 mb-2">No Events Found</h3>
                 <p class="text-gray-500">No events match your current filter criteria.</p>
                 <button onclick="eventManager.clearFilters()" class="btn btn-primary mt-4">
-                    🔄 Show All Events
+                    <i class="icon icon-sync"></i> Show All Events
                 </button>
             </div>
         `;
@@ -963,7 +961,7 @@ class EventManager {
     } catch (error) {
       this.showNotification(`Error creating event: ${error.message}`, 'error');
     } finally {
-      this.hideLoadingButton(form.querySelector('button[type="submit"]'), '✅ Create Event');
+      this.hideLoadingButton(form.querySelector('button[type="submit"]'), '[SUCCESS] Create Event');
     }
   }
 
@@ -1026,7 +1024,7 @@ class EventManager {
     } catch (error) {
       this.showNotification(`Error updating event: ${error.message}`, 'error');
     } finally {
-      this.hideLoadingButton(form.querySelector('button[type="submit"]'), '✅ Update Event');
+      this.hideLoadingButton(form.querySelector('button[type="submit"]'), '[SUCCESS] Update Event');
     }
   }
 
@@ -1044,7 +1042,7 @@ class EventManager {
       confirmModal.innerHTML = `
                 <div class="modal-content" style="max-width: 400px;">
                     <div class="text-center">
-                        <div class="text-4xl mb-4">🗑️</div>
+                        <div class="text-4xl mb-4"><i class="icon icon-delete" style="width: 2em; height: 2em;"></i></div>
                         <h3 class="text-xl font-semibold mb-4">Deleting Event...</h3>
                         <div class="loading mx-auto mb-4"></div>
                         <p class="text-gray-600 mb-6">Clearing attendees and deleting event...</p>
@@ -1109,14 +1107,14 @@ class EventManager {
       this.displayCurrentAttendees(attendees);
       this.updateAttendanceCount(attendees.length);
 
-      console.log('✅ Attendance list refreshed:', attendees.length, 'attendees');
+      console.log('[SUCCESS] Attendance list refreshed:', attendees.length, 'attendees');
     } catch (error) {
-      console.error('❌ Error loading attendees:', error);
+      console.error('[ERROR] Error loading attendees:', error);
       container.innerHTML = `
                 <div class="text-center py-8">
                     <p class="text-red-500">Error loading attendees: ${error.message}</p>
                     <button onclick="eventManager.loadCurrentAttendees()" class="btn btn-primary mt-2">
-                        🔄 Retry
+                        [SYNC] Retry
                     </button>
                 </div>
             `;
@@ -1129,7 +1127,7 @@ class EventManager {
     if (attendees.length === 0) {
       container.innerHTML = `
                 <div class="empty-state py-8">
-                    <div class="empty-state-icon">👥</div>
+                    <div class="empty-state-icon"><i class="icon icon-users" style="width: 3em; height: 3em;"></i></div>
                     <p class="text-gray-500">No attendees for this event yet.</p>
                     <p class="text-sm text-gray-400">Use the search above to add prefects.</p>
                 </div>
@@ -1153,7 +1151,7 @@ class EventManager {
                 </div>
                 <button onclick="eventManager.removeAttendeeFromEvent('${attendee.PrefectID}', '${attendee.House}')" 
                         class="btn btn-danger" title="Remove from event">
-                    ❌ Remove
+                    [DELETE] Remove
                 </button>
             </div>
         `
@@ -1216,7 +1214,7 @@ class EventManager {
                     </div>
                     <button onclick="eventManager.addAttendeeToEvent('${prefect.PrefectID}', '${prefect.House}', '${prefect.FullName}')" 
                             class="btn btn-success" title="Add to event">
-                        ➕ Add
+                        [ADD] Add
                     </button>
                 </div>
             `
@@ -1237,7 +1235,7 @@ class EventManager {
     const { eventId, eventType } = this.currentEventForAttendance;
 
     try {
-      console.log('➕ Adding attendee:', { prefectId, house, eventId, eventType });
+      console.log('[ADD] Adding attendee:', { prefectId, house, eventId, eventType });
 
       await this.addAttendee(prefectId, house, eventId, eventType);
 
@@ -1257,10 +1255,10 @@ class EventManager {
               status: 'success',
             }
           );
-          console.log('✅ Attendee addition logged to audit');
+          console.log('[SUCCESS] Attendee addition logged to audit');
         }
       } catch (auditError) {
-        console.log('⚠️ Failed to log attendee addition:', auditError);
+        console.log('[WARNING] Failed to log attendee addition:', auditError);
       }
       // Clear search immediately
       document.getElementById('prefectSearch').value = '';
@@ -1269,10 +1267,10 @@ class EventManager {
       // Force refresh attendees list with a small delay to ensure server has processed
       setTimeout(async () => {
         await this.loadCurrentAttendees();
-        console.log('🔄 Attendee list refreshed after add');
+        console.log('[SYNC] Attendee list refreshed after add');
       }, 500);
     } catch (error) {
-      console.error('❌ Error adding attendee:', error);
+      console.error('[ERROR] Error adding attendee:', error);
       this.showNotification(`Error adding attendee: ${error.message}`, 'error');
     }
   }
@@ -1288,7 +1286,7 @@ class EventManager {
     }
 
     try {
-      console.log('➖ Removing attendee:', { prefectId, house, eventId, eventType });
+      console.log('[DELETE] Removing attendee:', { prefectId, house, eventId, eventType });
 
       await this.removeAttendee(prefectId, house, eventId, eventType);
 
@@ -1297,10 +1295,10 @@ class EventManager {
       // Force refresh attendees list with a small delay to ensure server has processed
       setTimeout(async () => {
         await this.loadCurrentAttendees();
-        console.log('🔄 Attendee list refreshed after remove');
+        console.log('[SYNC] Attendee list refreshed after remove');
       }, 500);
     } catch (error) {
-      console.error('❌ Error removing attendee:', error);
+      console.error('[ERROR] Error removing attendee:', error);
       this.showNotification(`Error removing attendee: ${error.message}`, 'error');
     }
   }
@@ -1401,7 +1399,7 @@ class EventManager {
       return false;
     };
 
-    console.log('🔍 Applying filter:', this.currentFilter);
+    console.log('[INFO] Applying filter:', this.currentFilter);
 
     switch (this.currentFilter) {
       case 'general':
@@ -1416,11 +1414,11 @@ class EventManager {
         break;
       case 'upcoming':
         filteredEvents = filteredEvents.filter(isEventUpcoming);
-        console.log('🔮 Smart upcoming events filtered:', filteredEvents.length);
+        console.log('[INFO] Smart upcoming events filtered:', filteredEvents.length);
         break;
       case 'past':
         filteredEvents = filteredEvents.filter(event => !isEventUpcoming(event));
-        console.log('📅 Smart past events filtered:', filteredEvents.length);
+        console.log('[INFO] Smart past events filtered:', filteredEvents.length);
         break;
       default: // 'all'
         break;
@@ -1689,7 +1687,7 @@ class EventManager {
 
   async refreshStats() {
     try {
-      console.log('🔄 Force refreshing statistics...');
+      console.log('[SYNC] Force refreshing statistics...');
 
       // Clear cache to ensure fresh data
       this.clearEventCache();
@@ -1707,10 +1705,10 @@ class EventManager {
       this.displayStatistics(stats);
       this.applyCurrentFilter(); // Re-apply current filter to update event display
 
-      console.log('✅ Statistics refreshed successfully');
+      console.log('[SUCCESS] Statistics refreshed successfully');
       this.showNotification('Statistics updated successfully!', 'success');
     } catch (error) {
-      console.error('❌ Failed to refresh statistics:', error);
+      console.error('[ERROR] Failed to refresh statistics:', error);
       this.showNotification('Failed to refresh statistics', 'error');
     }
   }
@@ -1722,7 +1720,7 @@ class EventManager {
     }
 
     try {
-      console.log('🔄 Refreshing all data...');
+      console.log('[SYNC] Refreshing all data...');
 
       // Clear all caches
       this.clearEventCache();
@@ -1730,11 +1728,11 @@ class EventManager {
       // Force reload everything
       await Promise.all([this.loadAllEvents(), this.refreshStats()]);
 
-      this.showNotification('✅ All data refreshed successfully!', 'success');
-      console.log('🎉 Complete data refresh finished');
+      this.showNotification('[SUCCESS] All data refreshed successfully!', 'success');
+      console.log('[SUCCESS] Complete data refresh finished');
     } catch (error) {
-      console.error('❌ Failed to refresh data:', error);
-      this.showNotification('❌ Failed to refresh data', 'error');
+      console.error('[ERROR] Failed to refresh data:', error);
+      this.showNotification('[ERROR] Failed to refresh data', 'error');
     } finally {
       if (refreshIcon) {
         refreshIcon.style.animation = '';
@@ -1956,18 +1954,18 @@ window.eventManagerDebug = {
   },
 };
 
-console.log('🎉 Event Management System loaded successfully!');
-console.log('🔧 FIXED: 12-hour time format + overnight events + cascading deletion');
-console.log('🔄 Updated for new database schema with W0Number and Class fields');
-console.log('💡 Key fixes applied:');
-console.log('   ✅ 12-hour time display with AM/PM');
-console.log('   ✅ Overnight events support (11 PM → 1 AM works!)');
-console.log('   ✅ Smart time validation for cross-midnight events');
-console.log('   ✅ Cascading deletion: attendees cleared BEFORE event deletion');
-console.log('   ✅ Foreign key constraint issues resolved');
-console.log('   ✅ Batch processing for large attendee lists');
-console.log('   ✅ Robust error handling with fallback endpoints');
-console.log('💡 Available debug commands:');
+console.log('[SUCCESS] Event Management System loaded successfully!');
+console.log('[INFO] FIXED: 12-hour time format + overnight events + cascading deletion');
+console.log('[SYNC] Updated for new database schema with W0Number and Class fields');
+console.log('[INFO] Key fixes applied:');
+console.log('   [SUCCESS] 12-hour time display with AM/PM');
+console.log('   [SUCCESS] Overnight events support (11 PM -> 1 AM works!)');
+console.log('   [SUCCESS] Smart time validation for cross-midnight events');
+console.log('   [SUCCESS] Cascading deletion: attendees cleared BEFORE event deletion');
+console.log('   [SUCCESS] Foreign key constraint issues resolved');
+console.log('   [SUCCESS] Batch processing for large attendee lists');
+console.log('   [SUCCESS] Robust error handling with fallback endpoints');
+console.log('[INFO] Available debug commands:');
 console.log('   - eventManagerDebug.getCache() - View cache contents');
 console.log('   - eventManagerDebug.getAllEvents() - View all events');
 console.log('   - eventManagerDebug.getAllPrefects() - View all prefects');
@@ -1976,7 +1974,7 @@ console.log('   - eventManagerDebug.refreshData() - Refresh all data');
 console.log('   - eventManagerDebug.debugAll() - Complete debug info');
 console.log('   - eventManagerDebug.testSchemaCompatibility() - Test new schema fields');
 console.log('   - eventManagerDebug.testApiEndpoints() - Test API connectivity');
-console.log('🎯 Keyboard shortcuts:');
+console.log('[TARGET] Keyboard shortcuts:');
 console.log('   - Ctrl+N: New Event');
 console.log('   - Ctrl+F: Focus Search');
 console.log('   - Ctrl+R: Refresh Data');

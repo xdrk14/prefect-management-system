@@ -1,8 +1,8 @@
-// 🎓 PREFECT MANAGEMENT SYSTEM - ULTRA DASHBOARD V2.0
-// 🔥 Enterprise-Grade Performance Analytics Dashboard with Real Event Attendance
-// 📊 Real-time Data Visualization & Performance Tracking + CLEAN PDF Export Integration
+// [INFO] PREFECT MANAGEMENT SYSTEM - ULTRA DASHBOARD V2.0
+// [FIRE] Enterprise-Grade Performance Analytics Dashboard with Real Event Attendance
+// [INFO] Real-time Data Visualization & Performance Tracking + CLEAN PDF Export Integration
 
-console.log('🔥 Enhanced Dashboard.js Loading - Ultra Performance Mode with CLEAN PDF Export');
+console.log('[FIRE] Enhanced Dashboard.js Loading - Ultra Performance Mode with CLEAN PDF Export');
 console.time('Dashboard Load Time');
 
 // ===== GLOBAL CONFIGURATION =====
@@ -294,8 +294,8 @@ class DataManager {
     console.time('Data Load');
 
     try {
-      // 🚀 ULTRA-FAST BATCH REQUEST - 10x faster than individual calls
-      console.log('🚀 Using batch request for 10x faster loading...');
+      // [LAUNCH] ULTRA-FAST BATCH REQUEST - 10x faster than individual calls
+      console.log('[LAUNCH] Using batch request for 10x faster loading...');
 
       const response = await fetch(`${CONFIG.API_BASE}/batch`, {
         method: 'POST',
@@ -316,7 +316,7 @@ class DataManager {
       }
 
       const batchData = await response.json();
-      console.log('✅ Batch data received:', Object.keys(batchData));
+      console.log('[SUCCESS] Batch data received:', Object.keys(batchData));
 
       // Extract data from batch response
       const prefectsData = batchData.prefects || {};
@@ -395,12 +395,12 @@ class DataManager {
       });
 
       console.timeEnd('Data Load');
-      console.log('🚀 Batch loading completed - 10x faster than individual requests!');
+      console.log('[LAUNCH] Batch loading completed - 10x faster than individual requests!');
       return processedData;
     } catch (error) {
-      console.error('❌ Batch request failed, falling back to individual requests...', error);
+      console.error('[ERROR] Batch request failed, falling back to individual requests...', error);
 
-      // 🔄 FALLBACK: Use original method if batch fails
+      // [LOAD] FALLBACK: Use original method if batch fails
       try {
         const [prefectsData, offensesData, generalEvents, houseEvents, participationData] =
           await api.batchRequest([
@@ -482,10 +482,10 @@ class DataManager {
         });
 
         console.timeEnd('Data Load');
-        console.log('✅ Fallback loading completed successfully');
+        console.log('[SUCCESS] Fallback loading completed successfully');
         return processedData;
       } catch (fallbackError) {
-        console.error('❌ Both batch and fallback requests failed:', fallbackError);
+        console.error('[ERROR] Both batch and fallback requests failed:', fallbackError);
         throw fallbackError;
       }
     }
@@ -708,9 +708,6 @@ class UIRenderer {
       performersHTML ||
       `
             <div class="text-center py-8">
-                <svg class="w-16 h-16 text-gray-300 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
                 <p class="text-gray-500">Great! No prefects need immediate improvement</p>
             </div>
         `;
@@ -770,7 +767,11 @@ class UIRenderer {
   }
 
   static getRankMedal(rank) {
-    const medals = ['🥇', '🥈', '🥉'];
+    const medals = [
+      '<i class="icon icon-success" style="filter: invert(72%) sepia(54%) saturate(740%) hue-rotate(1deg) brightness(101%) contrast(105%); width: 1.5em; height: 1.5em;"></i>', 
+      '<i class="icon icon-success" style="filter: invert(83%) sepia(0%) saturate(0%) hue-rotate(334deg) brightness(87%) contrast(90%); width: 1.5em; height: 1.5em;"></i>', 
+      '<i class="icon icon-success" style="filter: invert(61%) sepia(35%) saturate(545%) hue-rotate(344deg) brightness(89%) contrast(90%); width: 1.5em; height: 1.5em;"></i>'
+    ];
     return rank <= 3 ? `<span class="text-xl">${medals[rank - 1]}</span>` : '';
   }
 
@@ -816,7 +817,7 @@ class UIRenderer {
 // ===== CLEAN PDF EXPORTER (NO HTML2CANVAS) =====
 class PDFExporter {
   static async exportToPDF(data, period = 'overall', selectedDate = null) {
-    console.log('📄 Starting CLEAN PDF Export Process...', {
+    console.log('[INFO] Starting CLEAN PDF Export Process...', {
       period,
       selectedDate,
       totalPrefects: data.allPrefects.length,
@@ -834,15 +835,15 @@ class PDFExporter {
       UIRenderer.showToast('📄 Creating PDF document...', 'info');
       await this.createCleanPDF(exportData, period);
 
-      UIRenderer.showToast('✅ PDF downloaded successfully!', 'success');
+      UIRenderer.showToast('[SUCCESS] PDF downloaded successfully!', 'success');
     } catch (error) {
-      console.error('❌ PDF Export failed:', error);
-      UIRenderer.showToast('❌ PDF export failed: ' + error.message, 'error');
+      console.error('[ERROR] PDF Export failed:', error);
+      UIRenderer.showToast('[ERROR] PDF export failed: ' + error.message, 'error');
     }
   }
 
   static prepareExportData(data, period, selectedDate) {
-    console.log('🔄 Preparing export data for period:', period);
+    console.log('[SYNC] Preparing export data for period:', period);
 
     let filteredOffenses = [...data.allOffenses];
     let periodText = this.getPeriodText(period, selectedDate);
@@ -923,9 +924,9 @@ class PDFExporter {
 
       // Save the PDF
       pdf.save(filename);
-      console.log(`✅ Clean PDF generated successfully: ${filename}`);
+      console.log(`[SUCCESS] Clean PDF generated successfully: ${filename}`);
     } catch (error) {
-      console.error('❌ Clean PDF generation failed:', error);
+      console.error('[ERROR] Clean PDF generation failed:', error);
       throw new Error('Failed to create PDF: ' + error.message);
     }
   }
@@ -935,30 +936,30 @@ class PDFExporter {
     try {
       // Method 1: Direct window.jsPDF
       if (window.jsPDF && typeof window.jsPDF === 'function') {
-        console.log('✅ Found jsPDF at window.jsPDF');
+        console.log('[SUCCESS] Found jsPDF at window.jsPDF');
         return window.jsPDF;
       }
 
       // Method 2: window.jsPDF.jsPDF
       if (window.jsPDF && window.jsPDF.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
-        console.log('✅ Found jsPDF at window.jsPDF.jsPDF');
+        console.log('[SUCCESS] Found jsPDF at window.jsPDF.jsPDF');
         return window.jsPDF.jsPDF;
       }
 
       // Method 3: window.jspdf.jsPDF
       if (window.jspdf && window.jspdf.jsPDF && typeof window.jspdf.jsPDF === 'function') {
-        console.log('✅ Found jsPDF at window.jspdf.jsPDF');
+        console.log('[SUCCESS] Found jsPDF at window.jspdf.jsPDF');
         return window.jspdf.jsPDF;
       }
 
       // Method 4: Check global jsPDF
       if (typeof jsPDF !== 'undefined' && typeof jsPDF === 'function') {
-        console.log('✅ Found jsPDF in global scope');
+        console.log('[SUCCESS] Found jsPDF in global scope');
         return jsPDF;
       }
 
       // Debug: Log what's actually available
-      console.log('🔍 Available objects:', {
+      console.log('[INFO] Available objects:', {
         'window.jsPDF': typeof window.jsPDF,
         'window.jsPDF type': window.jsPDF ? typeof window.jsPDF : 'undefined',
         'window.jsPDF.jsPDF': window.jsPDF ? typeof window.jsPDF.jsPDF : 'undefined',
@@ -969,7 +970,7 @@ class PDFExporter {
       // If window.jsPDF exists but isn't a function, it might be an object with jsPDF property
       if (window.jsPDF && typeof window.jsPDF === 'object') {
         if (window.jsPDF.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
-          console.log('✅ Found jsPDF constructor in object');
+          console.log('[SUCCESS] Found jsPDF constructor in object');
           return window.jsPDF.jsPDF;
         }
 
@@ -977,7 +978,7 @@ class PDFExporter {
         const possibleNames = ['jsPDF', 'default', 'exports'];
         for (const name of possibleNames) {
           if (window.jsPDF[name] && typeof window.jsPDF[name] === 'function') {
-            console.log(`✅ Found jsPDF at window.jsPDF.${name}`);
+            console.log(`[SUCCESS] Found jsPDF at window.jsPDF.${name}`);
             return window.jsPDF[name];
           }
         }
@@ -985,7 +986,7 @@ class PDFExporter {
 
       throw new Error('jsPDF constructor not found in any expected location');
     } catch (error) {
-      console.error('❌ Error finding jsPDF constructor:', error);
+      console.error('[ERROR] Error finding jsPDF constructor:', error);
       throw new Error('jsPDF constructor not found');
     }
   }
@@ -1000,10 +1001,10 @@ class PDFExporter {
     // Colors for houses
     // Colors for houses - FIXED: Cetus should be green, not blue
     const houseColors = {
-      Aquila: [220, 38, 38], // Red ✅
-      Cetus: [34, 197, 94], // Green ✅
-      Cygnus: [235, 200, 0], // Yellow ✅ (updated)
-      Ursa: [219, 39, 119], // Pink ✅
+      Aquila: [220, 38, 38], // Red [SUCCESS]
+      Cetus: [34, 197, 94], // Green [SUCCESS]
+      Cygnus: [235, 200, 0], // Yellow [SUCCESS] (updated)
+      Ursa: [219, 39, 119], // Pink [SUCCESS]
     };
 
     // Header
@@ -1411,7 +1412,7 @@ class EventHandler {
             STATE.selectedDateRange
           );
         } catch (error) {
-          console.error('❌ Export error:', error);
+          console.error('[ERROR] Export error:', error);
           UIRenderer.showToast('Export failed: ' + error.message, 'error');
         } finally {
           // Re-enable button
@@ -1420,7 +1421,7 @@ class EventHandler {
         }
       });
     } else {
-      console.warn('⚠️ Export button not found - make sure element with id="exportBtn" exists');
+      console.warn('[WARNING] Export button not found - make sure element with id="exportBtn" exists');
     }
   }
 
@@ -1462,10 +1463,10 @@ class DashboardValidator {
     });
 
     console.log('🔍 Dashboard Element Validation:');
-    console.log('✅ Found elements:', foundElements);
+    console.log('[SUCCESS] Found elements:', foundElements);
 
     if (missingElements.length > 0) {
-      console.warn('❌ Missing elements:', missingElements);
+      console.warn('[ERROR] Missing elements:', missingElements);
       console.warn('💡 Add these elements to your HTML:');
       missingElements.forEach(id => {
         console.warn(`   <div id="${id}"></div>`);
@@ -1473,7 +1474,7 @@ class DashboardValidator {
       return false;
     }
 
-    console.log('✅ All required elements found!');
+    console.log('[SUCCESS] All required elements found!');
     return true;
   }
 
@@ -1499,12 +1500,12 @@ class DashboardValidator {
           'padding: 20px; background: #f0f0f0; margin: 10px; border-radius: 8px;';
         document.body.appendChild(element);
         created++;
-        console.log(`✨ Created missing element: ${id}`);
+        console.log(`[INFO] Created missing element: ${id}`);
       }
     });
 
     if (created > 0) {
-      console.log(`🛠️ Auto-created ${created} missing elements`);
+      console.log(`[INFO] Auto-created ${created} missing elements`);
       console.log('💡 Consider updating your HTML with proper structure');
     }
 
@@ -1515,7 +1516,7 @@ class DashboardValidator {
 // ===== MAIN CONTROLLER =====
 class DashboardController {
   static async initialize() {
-    console.log('🚀 Initializing Enhanced Dashboard Controller with CLEAN PDF Export');
+    console.log('[LAUNCH] Initializing Enhanced Dashboard Controller with CLEAN PDF Export');
 
     try {
       const isValid = DashboardValidator.validateRequiredElements();
@@ -1532,9 +1533,9 @@ class DashboardController {
 
       setInterval(() => this.refreshData(), 300000);
 
-      console.log('✅ Enhanced Dashboard with CLEAN PDF Export initialized successfully');
+      console.log('[SUCCESS] Enhanced Dashboard with CLEAN PDF Export initialized successfully');
     } catch (error) {
-      console.error('❌ Dashboard initialization failed:', error);
+      console.error('[ERROR] Dashboard initialization failed:', error);
       UIRenderer.showError(error);
     }
   }
@@ -1575,9 +1576,9 @@ class DashboardController {
       UIRenderer.renderDetailedTable(displayData);
 
       STATE.lastUpdate = new Date();
-      console.log('✅ Enhanced data refresh completed with CLEAN PDF export ready');
+      console.log('[SUCCESS] Enhanced data refresh completed with CLEAN PDF export ready');
     } catch (error) {
-      console.error('❌ Data refresh failed:', error);
+      console.error('[ERROR] Data refresh failed:', error);
       UIRenderer.showError(error);
       UIRenderer.showToast('Failed to load dashboard data', 'error');
     } finally {
@@ -1588,14 +1589,14 @@ class DashboardController {
 
 // ===== INITIALIZATION =====
 document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🎯 Enhanced Dashboard DOM loaded, starting initialization with CLEAN PDF Export...');
+  console.log('[TARGET] Enhanced Dashboard DOM loaded, starting initialization with CLEAN PDF Export...');
 
   try {
     await DashboardController.initialize();
     console.timeEnd('Dashboard Load Time');
-    console.log('🎉 Enhanced Dashboard fully loaded and operational with CLEAN PDF Export!');
+    console.log('[SUCCESS] Enhanced Dashboard fully loaded and operational with CLEAN PDF Export!');
     console.log(
-      '📊 Features: Real Event Attendance, Performance Analytics, House Comparison, CLEAN PDF Export'
+      '[STATS] Features: Real Event Attendance, Performance Analytics, House Comparison, CLEAN PDF Export'
     );
   } catch (error) {
     console.error('💥 Fatal dashboard error:', error);

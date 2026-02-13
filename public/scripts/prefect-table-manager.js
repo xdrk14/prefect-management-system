@@ -5,7 +5,7 @@
  */
 
 class PrefectTableManager {
-  // ✅ ADD THIS METHOD TO THE END OF PrefectTableManager CLASS:
+  // [SUCCESS] ADD THIS METHOD TO THE END OF PrefectTableManager CLASS:
   checkAuthAndEdit(prefectId) {
     console.log('[PrefectManager] Edit button clicked for:', prefectId);
 
@@ -27,7 +27,7 @@ class PrefectTableManager {
     }
   }
 
-  // ✅ ADD THIS METHOD TOO:
+  // [SUCCESS] ADD THIS METHOD TOO:
   showLoadingMessage() {
     const notification = document.createElement('div');
     notification.style.cssText = `
@@ -40,7 +40,7 @@ class PrefectTableManager {
 
     notification.innerHTML = `
         <div style="display: flex; align-items: center;">
-            <span style="margin-right: 8px;">⏳</span>
+            <i class="icon icon-loading icon-spin"></i>
             <span><strong>Loading:</strong> Please wait for the system to load, then try again.</span>
         </div>
     `;
@@ -77,7 +77,7 @@ class PrefectTableManager {
       console.log(`[PrefectManager] ${message}`, data || '');
     }
   }
-  // 🚀 ADD THIS METHOD TO YOUR PrefectTableManager CLASS:
+  // [LAUNCH] ADD THIS METHOD TO YOUR PrefectTableManager CLASS:
 
   checkEditPermissionInstant() {
     // Multiple ways to check auth instantly - no waiting!
@@ -368,7 +368,7 @@ class PrefectTableManager {
   // Add this update to your existing prefect-table-manager.js file
   // Find the renderPositionTable method and update the tableMap section:
 
-  // 🚀 INSTANT AUTH CHECK - Replace your renderPositionTable method with this:
+  // [LAUNCH] INSTANT AUTH CHECK - Replace your renderPositionTable method with this:
 
   renderPositionTable(position, prefects) {
     this.debugLog(`Rendering table for position: ${position}`, prefects);
@@ -425,7 +425,7 @@ class PrefectTableManager {
       return;
     }
 
-    // 🚀 INSTANT AUTH CHECK - Check permissions right now, no waiting
+    // [LAUNCH] INSTANT AUTH CHECK - Check permissions right now, no waiting
     const hasEditPermission = this.checkEditPermissionInstant();
     console.log('[INSTANT-AUTH] User has edit permission:', hasEditPermission);
 
@@ -440,7 +440,7 @@ class PrefectTableManager {
     const rows = [];
 
     sortedPrefects.forEach(prefect => {
-      // 🚀 CONDITIONAL BUTTONS - Show edit button only if user has permission
+      // [LAUNCH] CONDITIONAL BUTTONS - Show edit button only if user has permission
       const buttonsHTML = hasEditPermission
         ? `
         <div class="flex space-x-2">

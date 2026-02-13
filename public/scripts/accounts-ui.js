@@ -75,7 +75,7 @@
       const userForm = document.getElementById('userForm');
       if (userForm) {
         userForm.addEventListener('submit', e => this.handleFormSubmit(e));
-        console.log('[ACCOUNTS-UI] ✅ Form submit handler bound');
+        console.log('[ACCOUNTS-UI] [SUCCESS] Form submit handler bound');
       }
 
       const userRole = document.getElementById('userRole');
@@ -272,20 +272,20 @@
       confirmButton.disabled = true;
       cancelButton.disabled = true;
 
-      console.log('🔄 Starting logout process...');
+      console.log('[LOAD] Starting logout process...');
 
       try {
         // 1. Sign out from Firebase Authentication
         if (window.firebaseAuth) {
-          console.log('🔥 Signing out from Firebase...');
+          console.log('[FIRE] Signing out from Firebase...');
           await window.firebaseAuth.signOut();
-          console.log('✅ Firebase signout successful');
+          console.log('[SUCCESS] Firebase signout successful');
         } else {
-          console.log('⚠️ Firebase Auth not available');
+          console.log('[WARNING] Firebase Auth not available');
         }
 
         // 2. Clear all stored data
-        console.log('🧹 Clearing stored data...');
+        console.log('[CLEAN] Clearing stored data...');
         try {
           localStorage.clear();
           sessionStorage.clear();
@@ -297,9 +297,9 @@
               .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
           });
 
-          console.log('✅ Storage and cookies cleared');
+          console.log('[SUCCESS] Storage and cookies cleared');
         } catch (error) {
-          console.log('⚠️ Storage clear failed:', error);
+          console.log('[WARNING] Storage clear failed:', error);
         }
 
         // 3. Clear auth system state
@@ -307,14 +307,14 @@
           window.authSystem.currentUser = null;
           window.authSystem.userRole = null;
           window.authSystem.authCheckCompleted = false;
-          console.log('✅ Auth system state cleared');
+          console.log('[SUCCESS] Auth system state cleared');
         }
 
         // 4. Clear auth manager state
         if (window.authManager) {
           window.authManager.currentUser = null;
           window.authManager.userRole = null;
-          console.log('✅ Auth manager state cleared');
+          console.log('[SUCCESS] Auth manager state cleared');
         }
 
         // 5. Show success message briefly, then redirect
@@ -335,7 +335,7 @@
 
           // 6. Redirect to login page after brief delay
           setTimeout(() => {
-            console.log('🚀 Redirecting to login page...');
+            console.log('[LAUNCH] Redirecting to login page...');
             window.location.href = 'index.html';
           }, 800);
         }, 1000);
@@ -363,7 +363,7 @@
       if (window.accountsManager?.testFirebaseConnection) {
         window.accountsManager.testFirebaseConnection();
       } else {
-        this.showToast('🔥 Firebase appears to be working! (Basic test)', 'success');
+        this.showToast('[FIRE] Firebase appears to be working! (Basic test)', 'success');
         console.log('Firebase Auth:', !!window.firebaseAuth);
         console.log('Firebase DB:', !!window.firebaseDb);
         console.log('Accounts Manager:', !!window.accountsManager);
@@ -444,7 +444,7 @@
         this.setButtonLoading(submitBtn, false, originalText);
 
         if (result?.success) {
-          console.log('[ACCOUNTS-UI] ✅ Form submission successful');
+          console.log('[ACCOUNTS-UI] [SUCCESS] Form submission successful');
           this.closeModal();
           setTimeout(() => this.refreshData(), 500);
         } else {
@@ -470,12 +470,12 @@
     }
 
     async createNewUser(userData) {
-      console.log('[ACCOUNTS-UI] ✅ Creating new user');
+      console.log('[ACCOUNTS-UI] [SUCCESS] Creating new user');
       return await window.accountsManager.createUser(userData);
     }
 
     async updateExistingUser(userData) {
-      console.log('[ACCOUNTS-UI] ✅ Updating existing user:', this.currentEditingUser.email);
+      console.log('[ACCOUNTS-UI] [SUCCESS] Updating existing user:', this.currentEditingUser.email);
       const updates = {
         name: userData.name,
         role: userData.role,

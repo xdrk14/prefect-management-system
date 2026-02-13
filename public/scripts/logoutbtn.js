@@ -120,7 +120,7 @@ function cancelLogout() {
  * 🆕 Clear edit manager and system caches
  */
 function clearEditManagerCaches() {
-  console.log('🧹 Clearing edit manager and system caches...');
+  console.log('[CLEAN] Clearing edit manager and system caches...');
 
   try {
     // 1. Clear all role caches from localStorage
@@ -134,7 +134,7 @@ function clearEditManagerCaches() {
 
     keysToRemove.forEach(key => {
       localStorage.removeItem(key);
-      console.log(`🗑️ Removed cache key: ${key}`);
+      console.log(`[DELETE] Removed cache key: ${key}`);
     });
 
     // 2. Clear edit manager state
@@ -145,33 +145,33 @@ function clearEditManagerCaches() {
       if (window.prefectManager.offenseMap) {
         window.prefectManager.offenseMap.clear();
       }
-      console.log('✅ Edit manager state cleared');
+      console.log('[SUCCESS] Edit manager state cleared');
     }
 
     // 3. Clear any open edit modals
     const editModal = document.getElementById('editPrefectModal');
     if (editModal) {
       editModal.classList.add('hidden');
-      console.log('✅ Edit modal closed');
+      console.log('[SUCCESS] Edit modal closed');
     }
 
     // 4. Clear add prefect modal
     const addModal = document.getElementById('addPrefectModal');
     if (addModal) {
       addModal.classList.add('hidden');
-      console.log('✅ Add prefect modal closed');
+      console.log('[SUCCESS] Add prefect modal closed');
     }
 
     // 5. Reset edit manager initialization flag
     if (typeof window.editManagerInitialized !== 'undefined') {
       window.editManagerInitialized = undefined;
-      console.log('✅ Edit manager initialization flag reset');
+      console.log('[SUCCESS] Edit manager initialization flag reset');
     }
 
     // 6. Clear event manager caches if available
     if (window.eventManager && window.eventManager.cache) {
       window.eventManager.cache.clear();
-      console.log('✅ Event manager cache cleared');
+      console.log('[SUCCESS] Event manager cache cleared');
     }
 
     // 7. Clear audit manager state
@@ -180,12 +180,12 @@ function clearEditManagerCaches() {
         window.auditLogManager.unsubscribeAuditLog();
       }
       window.auditLogManager.isListening = false;
-      console.log('✅ Audit manager state cleared');
+      console.log('[SUCCESS] Audit manager state cleared');
     }
 
-    console.log('✅ All edit manager and system caches cleared successfully');
+    console.log('[SUCCESS] All edit manager and system caches cleared successfully');
   } catch (error) {
-    console.error('⚠️ Error clearing edit manager caches:', error);
+    console.error('[WARNING] Error clearing edit manager caches:', error);
   }
 }
 
@@ -208,7 +208,7 @@ async function confirmLogout() {
   confirmButton.disabled = true;
   cancelButton.disabled = true;
 
-  console.log('🔄 Starting logout process...');
+  console.log('[LOAD] Starting logout process...');
 
   try {
     // 1. Get current user info before logout for audit logging
@@ -229,22 +229,22 @@ async function confirmLogout() {
           }
         }
       } catch (nameError) {
-        console.log('⚠️ Could not fetch user name:', nameError);
+        console.log('[WARNING] Could not fetch user name:', nameError);
       }
     }
 
     // 2. Log logout before signing out
     if (currentUser && window.auditLog) {
-      console.log('📝 Logging user logout...');
+      console.log('[INFO] Logging user logout...');
       try {
         await window.auditLog.logUserLogout(userEmail, userName);
-        console.log('✅ Logout audit logged successfully');
+        console.log('[SUCCESS] Logout audit logged successfully');
       } catch (auditError) {
-        console.log('⚠️ Audit logging failed:', auditError);
+        console.log('[WARNING] Audit logging failed:', auditError);
         // Don't fail logout for audit issues
       }
     } else {
-      console.log('⚠️ No current user or audit system not available');
+      console.log('[WARNING] No current user or audit system not available');
     }
 
     // 3. 🆕 Clear edit manager and system caches BEFORE Firebase logout
@@ -259,7 +259,7 @@ async function confirmLogout() {
 
     // 4. Sign out from Firebase Authentication
     if (window.firebaseAuth || firebase) {
-      console.log('🔥 Signing out from Firebase...');
+      console.log('[FIRE] Signing out from Firebase...');
       confirmButton.innerHTML = `
                 <svg class="animate-spin w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"></circle>
@@ -269,13 +269,13 @@ async function confirmLogout() {
             `;
       const authInstance = window.firebaseAuth || firebase.auth();
       await authInstance.signOut();
-      console.log('✅ Firebase signout successful');
+      console.log('[SUCCESS] Firebase signout successful');
     } else {
-      console.log('⚠️ Firebase Auth not available');
+      console.log('[WARNING] Firebase Auth not available');
     }
 
     // 5. Clear all stored data
-    console.log('🧹 Clearing stored data...');
+    console.log('[CLEAN] Clearing stored data...');
     confirmButton.innerHTML = `
             <svg class="animate-spin w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"></circle>
@@ -294,9 +294,9 @@ async function confirmLogout() {
           .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
       });
 
-      console.log('✅ Storage and cookies cleared');
+      console.log('[SUCCESS] Storage and cookies cleared');
     } catch (error) {
-      console.log('⚠️ Storage clear failed:', error);
+      console.log('[WARNING] Storage clear failed:', error);
     }
 
     // 6. Clear auth system state
@@ -304,14 +304,14 @@ async function confirmLogout() {
       window.authSystem.currentUser = null;
       window.authSystem.userRole = null;
       window.authSystem.authCheckCompleted = false;
-      console.log('✅ Auth system state cleared');
+      console.log('[SUCCESS] Auth system state cleared');
     }
 
     // 7. Clear auth manager state
     if (window.authManager) {
       window.authManager.currentUser = null;
       window.authManager.userRole = null;
-      console.log('✅ Auth manager state cleared');
+      console.log('[SUCCESS] Auth manager state cleared');
     }
 
     // 8. Show success message briefly, then redirect
@@ -332,7 +332,7 @@ async function confirmLogout() {
 
       // 9. Redirect to login page after brief delay
       setTimeout(() => {
-        console.log('🚀 Redirecting to login page...');
+        console.log('[LAUNCH] Redirecting to login page...');
         window.location.href = 'index.html';
       }, 800);
     }, 1000);
@@ -372,7 +372,7 @@ function handleLogout() {
  * Quick logout without confirmation (for emergency use)
  */
 async function quickLogout() {
-  console.log('🚀 Quick logout initiated');
+  console.log('[LAUNCH] Quick logout initiated');
 
   try {
     // Get current user for audit logging
@@ -386,7 +386,7 @@ async function quickLogout() {
           currentUser.displayName || currentUser.email
         );
       } catch (auditError) {
-        console.log('⚠️ Quick logout audit failed:', auditError);
+        console.log('[WARNING] Quick logout audit failed:', auditError);
       }
     }
 
@@ -420,7 +420,7 @@ async function quickLogout() {
       window.authManager.userRole = null;
     }
   } catch (error) {
-    console.log('⚠️ Quick logout error:', error);
+    console.log('[WARNING] Quick logout error:', error);
   }
 
   // Always redirect regardless of errors
@@ -468,9 +468,9 @@ window.cancelLogout = cancelLogout;
 window.confirmLogout = confirmLogout;
 window.clearEditManagerCaches = clearEditManagerCaches; // 🆕 Make cache clearing available globally
 
-console.log('🎨 Enhanced logout script loaded with edit manager cache clearing');
+console.log('[INFO] Enhanced logout script loaded with edit manager cache clearing');
 console.log(
-  '💡 Available functions: logout(), handleLogout(), quickLogout(), clearEditManagerCaches()'
+  '[INFO] Available functions: logout(), handleLogout(), quickLogout(), clearEditManagerCaches()'
 );
 
 // Add custom styles for animations

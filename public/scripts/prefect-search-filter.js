@@ -39,13 +39,13 @@ function createSearchPanel() {
     `;
 
   searchContainer.insertAdjacentElement('afterend', panel);
-  console.log('✅ Search panel created');
+  console.log('[SUCCESS] Search panel created');
 }
 
 // Load prefect data
 async function loadPrefectData() {
   try {
-    console.log('🔄 Loading data for house:', currentHouse);
+    console.log('[LOAD] Loading data for house:', currentHouse);
     const response = await fetch(`/api/prefects/${currentHouse.toLowerCase()}`);
 
     if (!response.ok) {
@@ -53,10 +53,10 @@ async function loadPrefectData() {
     }
 
     searchData = await response.json();
-    console.log('✅ Loaded', searchData.length, 'prefects');
+    console.log('[SUCCESS] Loaded', searchData.length, 'prefects');
     return true;
   } catch (error) {
-    console.error('❌ Failed to load data:', error);
+    console.error('[ERROR] Failed to load data:', error);
     searchData = [];
     return false;
   }
@@ -72,7 +72,7 @@ function applyFilters() {
   const selectedPosition = positionFilter?.value || '';
   const selectedPoints = pointsFilter?.value || '';
 
-  console.log('🔍 Applying filters:');
+  console.log('[INFO] Applying filters:');
   console.log('  Search:', searchQuery);
   console.log('  Position:', selectedPosition);
   console.log('  Points:', selectedPoints);
@@ -92,7 +92,7 @@ function applyFilters() {
 
   // Position filter
   if (selectedPosition) {
-    console.log('🎯 Filtering by position:', selectedPosition);
+    console.log('[TARGET] Filtering by position:', selectedPosition);
     const beforeCount = filtered.length;
     filtered = filtered.filter(prefect => prefect.Position === selectedPosition);
     console.log(`  ${beforeCount} → ${filtered.length} after position filter`);
@@ -100,7 +100,7 @@ function applyFilters() {
 
   // Points filter
   if (selectedPoints) {
-    console.log('📊 Filtering by points:', selectedPoints);
+    console.log('[STATS] Filtering by points:', selectedPoints);
     const [min, max] = selectedPoints.split('-').map(Number);
     const beforeCount = filtered.length;
     filtered = filtered.filter(prefect => {
@@ -110,7 +110,7 @@ function applyFilters() {
     console.log(`  ${beforeCount} → ${filtered.length} after points filter`);
   }
 
-  console.log('✅ Final results:', filtered.length);
+  console.log('[SUCCESS] Final results:', filtered.length);
   displayResults(filtered);
 
   // Show panel if we have filters active or search query
@@ -216,7 +216,7 @@ function showSearchPanel() {
   const panel = document.getElementById('searchResultsPanel');
   if (panel) {
     panel.classList.remove('hidden');
-    console.log('📱 Search panel shown');
+    console.log('[UI] Search panel shown');
   }
 }
 
@@ -224,7 +224,7 @@ function hideSearchPanel() {
   const panel = document.getElementById('searchResultsPanel');
   if (panel) {
     panel.classList.add('hidden');
-    console.log('📱 Search panel hidden');
+    console.log('[UI] Search panel hidden');
   }
 }
 
@@ -244,7 +244,7 @@ function clearAllFilters() {
 
 // Locate prefect in table
 function locatePrefect(prefectId, position) {
-  console.log('🎯 Locating prefect:', prefectId, position);
+  console.log('[TARGET] Locating prefect:', prefectId, position);
 
   // Hide search panel
   hideSearchPanel();
@@ -254,7 +254,7 @@ function locatePrefect(prefectId, position) {
   const table = document.getElementById(tableId);
 
   if (!table) {
-    console.error('❌ Table not found:', tableId);
+    console.error('[ERROR] Table not found:', tableId);
     return;
   }
 
@@ -270,7 +270,7 @@ function locatePrefect(prefectId, position) {
   }
 
   if (!targetRow) {
-    console.error('❌ Row not found for prefect:', prefectId);
+    console.error('[ERROR] Row not found for prefect:', prefectId);
     return;
   }
 
@@ -361,7 +361,7 @@ function showNotification(message) {
 
 // Add view details function
 function viewDetails(prefectId) {
-  console.log('👁️ Viewing details for:', prefectId);
+  console.log('[VIEW] Viewing details for:', prefectId);
   showNotification(`Opening details for ${prefectId}`);
   // You can add modal or navigation logic here
 }
@@ -384,11 +384,11 @@ function debounce(func, wait) {
 
 // Initialize everything
 async function initializeSearch() {
-  console.log('🚀 Initializing Simple Search System...');
+  console.log('[LAUNCH] Initializing Simple Search System...');
 
   // Detect current house
   currentHouse = detectHouse();
-  console.log('🏠 Current house:', currentHouse);
+  console.log('[HOUSE] Current house:', currentHouse);
 
   // Create search panel
   createSearchPanel();
@@ -396,7 +396,7 @@ async function initializeSearch() {
   // Load data
   const dataLoaded = await loadPrefectData();
   if (!dataLoaded) {
-    console.error('❌ Failed to load data, search will not work');
+    console.error('[ERROR] Failed to load data, search will not work');
     return;
   }
 
@@ -441,11 +441,11 @@ async function initializeSearch() {
     clearButton.addEventListener('click', clearAllFilters);
   }
 
-  console.log('✅ Search system initialized successfully!');
+  console.log('[SUCCESS] Search system initialized successfully!');
 
   // Test function for manual debugging
   window.testFilters = () => {
-    console.log('🧪 MANUAL TEST');
+    console.log('[TEST] MANUAL TEST');
     console.log('Search data length:', searchData.length);
     console.log('Position filter value:', positionFilter?.value);
     console.log('Points filter value:', pointsFilter?.value);

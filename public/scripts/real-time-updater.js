@@ -20,9 +20,9 @@ class RealTimeUpdateManager {
     this.userId = this.generateUserId();
     this.currentPage = this.detectCurrentPage();
 
-    console.log('🔄 Initializing Real-Time Update Manager');
-    console.log(`👤 User ID: ${this.userId}`);
-    console.log(`📄 Current Page: ${this.currentPage}`);
+    console.log('[LOAD] Initializing Real-Time Update Manager');
+    console.log(`[ID] User ID: ${this.userId}`);
+    console.log(`[PAGE] Current Page: ${this.currentPage}`);
 
     this.init();
   }
@@ -63,7 +63,7 @@ class RealTimeUpdateManager {
     // Set up connection status indicator
     this.createConnectionIndicator();
 
-    console.log('✅ Real-Time Update Manager initialized');
+    console.log('[SUCCESS] Real-Time Update Manager initialized');
   }
 
   async addSSEEndpointToServer() {
@@ -72,12 +72,12 @@ class RealTimeUpdateManager {
     try {
       const response = await fetch('/api/sse/connect', { method: 'HEAD' });
       if (response.ok) {
-        console.log('✅ SSE endpoint available');
+        console.log('[SUCCESS] SSE endpoint available');
       } else {
-        console.log('⚠️ SSE endpoint not available, will implement');
+        console.log('[WARNING] SSE endpoint not available, will implement');
       }
     } catch (error) {
-      console.log('⚠️ SSE endpoint check failed, will implement');
+      console.log('[WARNING] SSE endpoint check failed, will implement');
     }
   }
 
@@ -87,14 +87,14 @@ class RealTimeUpdateManager {
     }
 
     try {
-      console.log('🔌 Attempting SSE connection...');
+      console.log('[CONNECT] Attempting SSE connection...');
 
       // Create SSE connection with user ID and page info
       const sseUrl = `/api/sse/updates?userId=${this.userId}&page=${this.currentPage}&timestamp=${Date.now()}`;
       this.eventSource = new EventSource(sseUrl);
 
       this.eventSource.onopen = () => {
-        console.log('✅ SSE Connection established');
+        console.log('[SUCCESS] SSE Connection established');
         this.isConnected = true;
         this.connectionType = 'SSE';
         this.reconnectAttempts = 0;
@@ -125,18 +125,18 @@ class RealTimeUpdateManager {
 
       this.eventSource.addEventListener('heartbeat', event => {
         const data = JSON.parse(event.data);
-        console.log('💓 Heartbeat received:', data);
+        console.log('[HEARTBEAT] Heartbeat received:', data);
         this.lastUpdateTimestamp = Date.now();
       });
 
       this.eventSource.onerror = error => {
-        console.error('❌ SSE Connection error:', error);
+        console.error('[ERROR] SSE Connection error:', error);
         this.isConnected = false;
         this.updateConnectionStatus('disconnected');
         this.handleConnectionError();
       };
     } catch (error) {
-      console.error('❌ Failed to create SSE connection:', error);
+      console.error('[ERROR] Failed to create SSE connection:', error);
       this.connectWebSocket();
     }
   }
@@ -147,7 +147,7 @@ class RealTimeUpdateManager {
     }
 
     try {
-      console.log('🔌 Attempting WebSocket connection...');
+      console.log('[CONNECT] Attempting WebSocket connection...');
 
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const wsUrl = `${protocol}//${window.location.host}/ws/updates?userId=${this.userId}&page=${this.currentPage}`;
@@ -155,7 +155,7 @@ class RealTimeUpdateManager {
       this.websocket = new WebSocket(wsUrl);
 
       this.websocket.onopen = () => {
-        console.log('✅ WebSocket Connection established');
+        console.log('[SUCCESS] WebSocket Connection established');
         this.isConnected = true;
         this.connectionType = 'WebSocket';
         this.reconnectAttempts = 0;
@@ -170,19 +170,19 @@ class RealTimeUpdateManager {
       };
 
       this.websocket.onerror = error => {
-        console.error('❌ WebSocket error:', error);
+        console.error('[ERROR] WebSocket error:', error);
         this.isConnected = false;
         this.updateConnectionStatus('disconnected');
       };
 
       this.websocket.onclose = () => {
-        console.log('🔌 WebSocket connection closed');
+        console.log('[CONNECT] WebSocket connection closed');
         this.isConnected = false;
         this.updateConnectionStatus('disconnected');
         this.handleConnectionError();
       };
     } catch (error) {
-      console.error('❌ Failed to create WebSocket connection:', error);
+      console.error('[ERROR] Failed to create WebSocket connection:', error);
       this.handleConnectionError();
     }
   }
@@ -193,7 +193,7 @@ class RealTimeUpdateManager {
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1); // Exponential backoff
 
       console.log(
-        `🔄 Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
+        `[LOAD] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})`
       );
 
       setTimeout(() => {
@@ -204,7 +204,7 @@ class RealTimeUpdateManager {
         }
       }, delay);
     } else {
-      console.error('❌ Max reconnection attempts reached');
+      console.error('[ERROR] Max reconnection attempts reached');
       this.updateConnectionStatus('failed');
       this.showConnectionErrorNotification();
     }
@@ -215,13 +215,13 @@ class RealTimeUpdateManager {
       const update = JSON.parse(data);
       this.processUpdate(update);
     } catch (error) {
-      console.error('❌ Error parsing server update:', error);
+      console.error('[ERROR] Error parsing server update:', error);
     }
   }
 
   handleServerMessage(data) {
     if (data.type === 'heartbeat') {
-      console.log('💓 WebSocket heartbeat received');
+      console.log('[HEARTBEAT] WebSocket heartbeat received');
       this.lastUpdateTimestamp = Date.now();
       return;
     }
@@ -232,11 +232,11 @@ class RealTimeUpdateManager {
   processUpdate(update) {
     // Ignore updates from this user to prevent feedback loops
     if (update.userId === this.userId) {
-      console.log('🔄 Ignoring own update:', update.type);
+      console.log('[LOAD] Ignoring own update:', update.type);
       return;
     }
 
-    console.log('📨 Processing real-time update:', update);
+    console.log('[INFO] Processing real-time update:', update);
 
     // Add to update queue with timestamp
     update.receivedAt = Date.now();
@@ -272,7 +272,7 @@ class RealTimeUpdateManager {
         break;
 
       default:
-        console.log('❓ Unknown update type:', update.type);
+        console.log('[UNKNOWN] Unknown update type:', update.type);
     }
 
     // Clean old updates from queue (keep last 100)
@@ -284,7 +284,7 @@ class RealTimeUpdateManager {
   // ==================== UPDATE HANDLERS ====================
 
   handlePrefectUpdate(update) {
-    console.log('👤 Handling prefect update:', update);
+    console.log('[INFO] Handling prefect update:', update);
 
     // Call registered handlers
     this.callHandlers('prefect', update);
@@ -299,20 +299,20 @@ class RealTimeUpdateManager {
 
       // If prefect table manager exists, refresh the data
       if (window.prefectManager && typeof window.prefectManager.refreshData === 'function') {
-        console.log('🔄 Refreshing prefect table data');
+        console.log('[LOAD] Refreshing prefect table data');
         window.prefectManager.refreshData();
       }
 
       // If dashboard exists, refresh statistics
       if (window.dashboardManager && typeof window.dashboardManager.refreshStats === 'function') {
-        console.log('📊 Refreshing dashboard statistics');
+        console.log('[STATS] Refreshing dashboard statistics');
         window.dashboardManager.refreshStats();
       }
     }
   }
 
   handleEventUpdate(update) {
-    console.log('📅 Handling event update:', update);
+    console.log('[INFO] Handling event update:', update);
 
     // Call registered handlers
     this.callHandlers('event', update);
@@ -323,14 +323,14 @@ class RealTimeUpdateManager {
 
       // If event manager exists, refresh the data
       if (window.eventManager && typeof window.eventManager.refreshAllData === 'function') {
-        console.log('🔄 Refreshing event manager data');
+        console.log('[LOAD] Refreshing event manager data');
         window.eventManager.refreshAllData();
       }
     }
   }
 
   handleAttendanceUpdate(update) {
-    console.log('👥 Handling attendance update:', update);
+    console.log('[INFO] Handling attendance update:', update);
 
     // Call registered handlers
     this.callHandlers('attendance', update);
@@ -339,7 +339,7 @@ class RealTimeUpdateManager {
     if (window.eventManager && window.eventManager.currentEventForAttendance) {
       const currentEvent = window.eventManager.currentEventForAttendance;
       if (currentEvent.eventId === update.eventId && currentEvent.eventType === update.eventType) {
-        console.log('🔄 Refreshing attendance modal');
+        console.log('[LOAD] Refreshing attendance modal');
         window.eventManager.loadCurrentAttendees();
       }
     }
@@ -348,7 +348,7 @@ class RealTimeUpdateManager {
   }
 
   handleOffenseUpdate(update) {
-    console.log('⚖️ Handling offense update:', update);
+    console.log('[INFO] Handling offense update:', update);
 
     // Call registered handlers
     this.callHandlers('offense', update);
@@ -368,7 +368,7 @@ class RealTimeUpdateManager {
   }
 
   handleCacheInvalidation(update) {
-    console.log('🗑️ Handling cache invalidation:', update);
+    console.log('[INFO] Handling cache invalidation:', update);
 
     // Clear relevant caches
     if (window.eventManager && typeof window.eventManager.clearEventCache === 'function') {
@@ -390,7 +390,7 @@ class RealTimeUpdateManager {
       this.updateHandlers.set(type, []);
     }
     this.updateHandlers.get(type).push(handler);
-    console.log(`📝 Registered update handler for type: ${type}`);
+    console.log(`[INFO] Registered update handler for type: ${type}`);
   }
 
   callHandlers(type, update) {
@@ -399,7 +399,7 @@ class RealTimeUpdateManager {
       try {
         handler(update);
       } catch (error) {
-        console.error(`❌ Error in update handler for ${type}:`, error);
+        console.error(`[ERROR] Error in update handler for ${type}:`, error);
       }
     });
   }
@@ -407,17 +407,17 @@ class RealTimeUpdateManager {
   registerDefaultHandlers() {
     // Register default handlers that work with existing managers
     this.registerUpdateHandler('prefect', update => {
-      console.log('📝 Default prefect handler:', update);
+      console.log('[INFO] Default prefect handler:', update);
       // Additional default handling can go here
     });
 
     this.registerUpdateHandler('event', update => {
-      console.log('📝 Default event handler:', update);
+      console.log('[INFO] Default event handler:', update);
       // Additional default handling can go here
     });
 
     this.registerUpdateHandler('attendance', update => {
-      console.log('📝 Default attendance handler:', update);
+      console.log('[INFO] Default attendance handler:', update);
       // Additional default handling can go here
     });
   }
@@ -425,7 +425,7 @@ class RealTimeUpdateManager {
   // Broadcast update to server (called when this client makes changes)
   broadcastUpdate(type, data) {
     if (!this.isConnected) {
-      console.log('⚠️ Not connected, queuing update for later');
+      console.log('[WARNING] Not connected, queuing update for later');
       return;
     }
 
@@ -444,7 +444,7 @@ class RealTimeUpdateManager {
         this.websocket.readyState === WebSocket.OPEN
       ) {
         this.websocket.send(JSON.stringify(update));
-        console.log('📤 Sent WebSocket update:', update);
+        console.log('[SEND] Sent WebSocket update:', update);
       } else {
         // For SSE, we need to send via HTTP POST
         fetch('/api/sse/broadcast', {
@@ -452,17 +452,17 @@ class RealTimeUpdateManager {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(update),
         }).catch(error => {
-          console.error('❌ Failed to broadcast update via HTTP:', error);
+          console.error('[ERROR] Failed to broadcast update via HTTP:', error);
         });
-        console.log('📤 Sent HTTP update:', update);
+        console.log('[SEND] Sent HTTP update:', update);
       }
     } catch (error) {
-      console.error('❌ Failed to broadcast update:', error);
+      console.error('[ERROR] Failed to broadcast update:', error);
     }
   }
 
   refreshCurrentPageData() {
-    console.log('🔄 Refreshing current page data');
+    console.log('[LOAD] Refreshing current page data');
 
     // Refresh based on current page
     switch (this.currentPage) {
@@ -492,7 +492,7 @@ class RealTimeUpdateManager {
         break;
 
       default:
-        console.log('ℹ️ No specific refresh method for page:', this.currentPage);
+        console.log('[INFO] No specific refresh method for page:', this.currentPage);
     }
   }
 
@@ -508,7 +508,7 @@ class RealTimeUpdateManager {
       const timeSinceLastUpdate = Date.now() - this.lastUpdateTimestamp;
       if (timeSinceLastUpdate > 30000) {
         // 30 seconds
-        console.log('⚠️ No updates received recently, checking connection');
+        console.log('[WARNING] No updates received recently, checking connection');
         this.checkConnection();
       }
     }, 15000); // Send heartbeat every 15 seconds
@@ -523,7 +523,7 @@ class RealTimeUpdateManager {
 
   checkConnection() {
     if (!this.isConnected) {
-      console.log('🔄 Connection lost, attempting to reconnect');
+      console.log('[CONNECT] Connection lost, attempting to reconnect');
       if (this.connectionType === 'SSE') {
         this.connectSSE();
       } else {
@@ -536,7 +536,7 @@ class RealTimeUpdateManager {
     document.addEventListener('visibilitychange', () => {
       if (!document.hidden && this.isConnected) {
         // Page became visible, refresh data to catch up on any missed updates
-        console.log('👁️ Page visible, refreshing data');
+        console.log('[VISIBLE] Page visible, refreshing data');
         setTimeout(() => {
           this.refreshCurrentPageData();
         }, 1000);
@@ -577,12 +577,13 @@ class RealTimeUpdateManager {
 
     switch (status) {
       case 'connecting':
-        indicator.textContent = '🔄 Connecting...';
+        indicator.textContent = 'Connecting...';
+        indicator.innerHTML = '<i class="icon icon-loading icon-spin icon-white"></i> Connecting...';
         indicator.style.background = '#fbbf24';
         break;
       case 'connected':
-        indicator.textContent = `✅ Live (${this.connectionType})`;
-        indicator.style.background = '#10b981';
+        indicator.textContent = `Live (${this.connectionType})`;
+        indicator.innerHTML = '<i class="icon icon-success icon-white"></i> Live (' + this.connectionType + ')';
         // Hide after 3 seconds if connected
         setTimeout(() => {
           if (indicator.textContent.includes('Live')) {
@@ -591,12 +592,14 @@ class RealTimeUpdateManager {
         }, 3000);
         break;
       case 'disconnected':
-        indicator.textContent = '⚠️ Disconnected';
+        indicator.textContent = 'Disconnected';
+        indicator.innerHTML = '<i class="icon icon-error icon-white"></i> Disconnected';
         indicator.style.background = '#f59e0b';
         indicator.style.opacity = '0.9';
         break;
       case 'failed':
-        indicator.textContent = '❌ Connection Failed';
+        indicator.textContent = 'Connection Failed';
+        indicator.innerHTML = '<i class="icon icon-error icon-white"></i> Connection Failed';
         indicator.style.background = '#ef4444';
         indicator.style.opacity = '0.9';
         break;
@@ -626,37 +629,37 @@ class RealTimeUpdateManager {
     let message = '';
     switch (update.type) {
       case 'prefect-created':
-        message = `👤 New prefect added: ${update.data?.FullName || 'Unknown'}`;
+        message = `<i class="icon icon-users"></i> New prefect added: ${update.data?.FullName || 'Unknown'}`;
         break;
       case 'prefect-updated':
-        message = `👤 Prefect updated: ${update.data?.FullName || 'Unknown'}`;
+        message = `<i class="icon icon-users"></i> Prefect updated: ${update.data?.FullName || 'Unknown'}`;
         break;
       case 'prefect-deleted':
-        message = `👤 Prefect deleted: ${update.data?.FullName || 'Unknown'}`;
+        message = `<i class="icon icon-users"></i> Prefect deleted: ${update.data?.FullName || 'Unknown'}`;
         break;
       case 'event-created':
-        message = `📅 New event created: ${update.data?.eventName || 'Unknown'}`;
+        message = `<i class="icon icon-events"></i> New event created: ${update.data?.eventName || 'Unknown'}`;
         break;
       case 'event-updated':
-        message = `📅 Event updated: ${update.data?.eventName || 'Unknown'}`;
+        message = `<i class="icon icon-events"></i> Event updated: ${update.data?.eventName || 'Unknown'}`;
         break;
       case 'event-deleted':
-        message = `📅 Event deleted: ${update.data?.eventName || 'Unknown'}`;
+        message = `<i class="icon icon-events"></i> Event deleted: ${update.data?.eventName || 'Unknown'}`;
         break;
       case 'attendance-added':
-        message = `👥 Attendee added to event`;
+        message = `<i class="icon icon-users"></i> Attendee added to event`;
         break;
       case 'attendance-removed':
-        message = `👥 Attendee removed from event`;
+        message = `<i class="icon icon-users"></i> Attendee removed from event`;
         break;
       case 'offense-added':
-        message = `⚖️ New offense recorded`;
+        message = `<i class="icon icon-shield"></i> New offense recorded`;
         break;
       default:
-        message = `🔄 Data updated by another user`;
+        message = `<i class="icon icon-past"></i> Data updated by another user`;
     }
 
-    notification.textContent = message;
+    notification.innerHTML = message;
     document.body.appendChild(notification);
 
     // Animate in
@@ -694,10 +697,10 @@ class RealTimeUpdateManager {
         `;
 
     errorNotification.innerHTML = `
-            <h3 style="margin: 0 0 10px 0; font-size: 18px;">❌ Connection Lost</h3>
+            <h3 style="margin: 0 0 10px 0; font-size: 18px;"><i class="icon icon-error icon-white"></i> Connection Lost</h3>
             <p style="margin: 0 0 15px 0;">Live updates are not available. You may need to refresh manually to see changes from other users.</p>
             <button onclick="location.reload()" style="background: white; color: #ef4444; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;">
-                🔄 Refresh Page
+                <i class="icon icon-loading icon-spin"></i> Refresh Page
             </button>
         `;
 
@@ -742,7 +745,7 @@ class RealTimeUpdateManager {
 
   // Disconnect (for cleanup)
   disconnect() {
-    console.log('🔌 Disconnecting real-time updates');
+    console.log('[CONNECT] Disconnecting real-time updates');
 
     if (this.eventSource) {
       this.eventSource.close();
@@ -935,7 +938,7 @@ const addRealTimeEndpoints = app => {
   app.get('/api/sse/updates', (req, res) => {
     const { userId, page, timestamp } = req.query;
 
-    console.log(`📡 SSE Connection: ${userId} on page ${page}`);
+    console.log(`[CONNECT] SSE Connection: ${userId} on page ${page}`);
 
     // Set SSE headers
     res.writeHead(200, {
@@ -983,12 +986,12 @@ const addRealTimeEndpoints = app => {
 
     // Handle client disconnect
     req.on('close', () => {
-      console.log(`📡 SSE Disconnected: ${userId}`);
+      console.log(`[CONNECT] SSE Disconnected: ${userId}`);
       connectedClients.delete(userId);
     });
 
     req.on('error', error => {
-      console.error(`❌ SSE Error for ${userId}:`, error);
+      console.error(`[ERROR] SSE Error for ${userId}:`, error);
       connectedClients.delete(userId);
     });
   });
@@ -997,7 +1000,7 @@ const addRealTimeEndpoints = app => {
   app.post('/api/sse/broadcast', express.json(), (req, res) => {
     const update = req.body;
 
-    console.log(`📤 Broadcasting update:`, update);
+    console.log(`[BROADCAST] Broadcasting update:`, update);
 
     // Store update in broadcast history
     const updateKey = `${update.type}_${update.timestamp}`;
@@ -1017,7 +1020,7 @@ const addRealTimeEndpoints = app => {
           client.response.write(`data: ${JSON.stringify(update)}\n\n`);
           client.lastPing = Date.now();
         } catch (error) {
-          console.error(`❌ Failed to send to client ${clientId}:`, error);
+          console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
           connectedClients.delete(clientId);
         }
       }
@@ -1032,7 +1035,7 @@ const addRealTimeEndpoints = app => {
       const userId = req.query.userId;
       const page = req.query.page;
 
-      console.log(`🔌 WebSocket Connection: ${userId} on page ${page}`);
+      console.log(`[WS] WebSocket Connection: ${userId} on page ${page}`);
 
       const clientInfo = {
         id: userId,
@@ -1058,7 +1061,7 @@ const addRealTimeEndpoints = app => {
       ws.on('message', message => {
         try {
           const update = JSON.parse(message);
-          console.log(`📤 WebSocket update from ${userId}:`, update);
+          console.log(`[BROADCAST] WebSocket update from ${userId}:`, update);
 
           // Store and broadcast update
           const updateKey = `${update.type}_${update.timestamp}`;
@@ -1076,23 +1079,23 @@ const addRealTimeEndpoints = app => {
                 }
                 client.lastPing = Date.now();
               } catch (error) {
-                console.error(`❌ Failed to send to client ${clientId}:`, error);
+                console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
                 connectedClients.delete(clientId);
               }
             }
           });
         } catch (error) {
-          console.error('❌ Error processing WebSocket message:', error);
+          console.error('[ERROR] Error processing WebSocket message:', error);
         }
       });
 
       ws.on('close', () => {
-        console.log(`🔌 WebSocket Disconnected: ${userId}`);
+        console.log(`[WS] WebSocket Disconnected: ${userId}`);
         connectedClients.delete(userId);
       });
 
       ws.on('error', error => {
-        console.error(`❌ WebSocket Error for ${userId}:`, error);
+        console.error(`[ERROR] WebSocket Error for ${userId}:`, error);
         connectedClients.delete(userId);
       });
     });
@@ -1108,7 +1111,7 @@ const addRealTimeEndpoints = app => {
       const timeSinceLastPing = now - client.lastPing;
       if (timeSinceLastPing > 60000) {
         // 1 minute timeout
-        console.log(`🧹 Cleaning up stale connection: ${clientId}`);
+        console.log(`[CLEAN] Cleaning up stale connection: ${clientId}`);
         connectedClients.delete(clientId);
       } else {
         activeClients.push({
@@ -1137,7 +1140,7 @@ const addRealTimeEndpoints = app => {
         }
         client.lastPing = now;
       } catch (error) {
-        console.error(`❌ Heartbeat failed for ${clientId}:`, error);
+        console.error(`[ERROR] Heartbeat failed for ${clientId}:`, error);
         connectedClients.delete(clientId);
       }
     });
@@ -1169,16 +1172,16 @@ const addRealTimeEndpoints = app => {
   setInterval(() => {
     const heartbeatUrl = `http://localhost:${process.env.PORT || 3000}/api/sse/heartbeat`;
     fetch(heartbeatUrl).catch(error => {
-      console.error('❌ Heartbeat fetch error:', error.message);
+      console.error('[ERROR] Heartbeat fetch error:', error.message);
     });
   }, 30000); // Every 30 seconds
 
-  console.log('✅ Real-time update endpoints registered');
-  console.log('   📡 SSE: GET /api/sse/updates');
-  console.log('   📤 Broadcast: POST /api/sse/broadcast');
-  console.log('   🔌 WebSocket: WS /ws/updates');
-  console.log('   💓 Heartbeat: GET /api/sse/heartbeat');
-  console.log('   📊 Stats: GET /api/sse/stats');
+  console.log('[SUCCESS] Real-time update endpoints registered');
+  console.log('   [CONNECT] SSE: GET /api/sse/updates');
+  console.log('   [BROADCAST] Broadcast: POST /api/sse/broadcast');
+  console.log('   [WS] WebSocket: WS /ws/updates');
+  console.log('   [HEARTBEAT] Heartbeat: GET /api/sse/heartbeat');
+  console.log('   [STATS] Stats: GET /api/sse/stats');
 };
 
 // ==================== INITIALIZATION CODE ====================
@@ -1188,7 +1191,7 @@ let realTimeUpdater = null;
 
 // Initialize real-time updates when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('🚀 Starting Real-Time Update System...');
+  console.log('[LAUNCH] Starting Real-Time Update System...');
 
   // Create the real-time updater
   realTimeUpdater = new RealTimeUpdateManager();
@@ -1198,7 +1201,7 @@ document.addEventListener('DOMContentLoaded', () => {
   setTimeout(() => {
     if (typeof window.addRealTimeIntegration === 'function') {
       window.addRealTimeIntegration();
-      console.log('✅ Real-time integration added to existing managers');
+      console.log('[SUCCESS] Real-time integration added to existing managers');
     }
   }, 2000);
 
@@ -1229,16 +1232,16 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = { addRealTimeEndpoints };
 }
 
-console.log('✅ Real-Time Update System loaded!');
-console.log('🔧 Features:');
-console.log('   📡 Server-Sent Events (SSE) with WebSocket fallback');
-console.log('   🔄 Automatic reconnection with exponential backoff');
-console.log('   👥 Multi-user synchronization');
-console.log('   📱 Connection status indicator');
-console.log('   🔔 Real-time notifications for changes');
-console.log('   💓 Heartbeat monitoring');
-console.log('   📊 Integration with existing Event and Edit managers');
-console.log('💡 Debug commands:');
+console.log('[SUCCESS] Real-Time Update System loaded!');
+console.log('[CONFIG] Features:');
+console.log('   [CONNECT] Server-Sent Events (SSE) with WebSocket fallback');
+console.log('   [SYNC] Automatic reconnection with exponential backoff');
+console.log('   [USERS] Multi-user synchronization');
+console.log('   [STATUS] Connection status indicator');
+console.log('   [NOTIFY] Real-time notifications for changes');
+console.log('   [HEARTBEAT] Heartbeat monitoring');
+console.log('   [STATS] Integration with existing Event and Edit managers');
+console.log('[TIPS] Debug commands:');
 console.log('   - realTimeDebug.getConnectionInfo() - View connection status');
 console.log('   - realTimeDebug.forceRefresh() - Force refresh current page');
 console.log('   - realTimeDebug.broadcastTest("test", {data: "hello"}) - Test broadcast');

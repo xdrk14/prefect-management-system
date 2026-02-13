@@ -1,6 +1,6 @@
 // utils/navigation-utils.js - Fixed Navigation and mobile menu utilities
 
-console.log('🔧 Navigation Utils Loading...');
+console.log('[CLEAN] Navigation Utils Loading...');
 
 // Check if screen is mobile/tablet size (1024px or smaller)
 function isMobileScreen() {
@@ -9,7 +9,7 @@ function isMobileScreen() {
 
 // Mobile Menu Toggle - Fixed version
 function initializeMobileMenu() {
-  console.log('🍔 Initializing custom mobile menu...');
+  console.log('[INFO] Initializing custom mobile menu...');
 
   // Find our custom hamburger and mobile menu
   const hamburger = document.querySelector('.hamburger');
@@ -48,7 +48,7 @@ function initializeMobileMenu() {
       e.preventDefault();
       e.stopPropagation();
 
-      console.log('🍔 Hamburger clicked, screen:', window.innerWidth);
+      console.log('[INFO] Hamburger clicked, screen:', window.innerWidth);
 
       if (isMobileScreen()) {
         const isActive = mobileMenu.classList.contains('active');
@@ -59,13 +59,13 @@ function initializeMobileMenu() {
           mobileMenu.classList.remove('active');
           newHamburger.classList.remove('active');
           document.body.classList.remove('menu-open'); // Prevent body scroll
-          console.log('❌ Menu closed');
+          console.log('[SUCCESS] Menu closed');
         } else {
           // Open menu
           mobileMenu.classList.add('active');
           newHamburger.classList.add('active');
           document.body.classList.add('menu-open'); // Prevent body scroll
-          console.log('✅ Menu opened');
+          console.log('[SUCCESS] Menu opened');
         }
       }
     });
@@ -82,7 +82,7 @@ function initializeMobileMenu() {
           mobileMenu.classList.remove('active');
           newHamburger.classList.remove('active');
           document.body.classList.remove('menu-open');
-          console.log('🔗 Menu closed by nav link');
+          console.log('[INFO] Menu closed by nav link');
         }
       });
     });
@@ -96,7 +96,7 @@ function initializeMobileMenu() {
           mobileMenu.classList.remove('active');
           newHamburger.classList.remove('active');
           document.body.classList.remove('menu-open');
-          console.log('🌍 Menu closed by outside click');
+          console.log('[INFO] Menu closed by outside click');
         }
       }
     }
@@ -110,9 +110,9 @@ function initializeMobileMenu() {
     outsideClickHandler = handleOutsideClick;
     document.addEventListener('click', outsideClickHandler);
 
-    console.log('✅ Custom hamburger menu initialized');
+    console.log('[SUCCESS] Custom hamburger menu initialized');
   } else {
-    console.warn('⚠️ Required navigation elements not found');
+    console.warn('[WARNING] Required navigation elements not found');
   }
 
   // Handle responsive behavior
@@ -125,11 +125,11 @@ function updateNavigationDisplay() {
   const mobileMenu = document.querySelector('.nav-menu');
   const desktopNav = document.querySelector('.desktop-nav');
 
-  console.log('📱 Updating navigation display, screen:', window.innerWidth);
+  console.log('[INFO] Updating navigation display, screen:', window.innerWidth);
 
   if (isMobileScreen()) {
     // Mobile/Tablet mode (1024px and below)
-    console.log('🔄 Switching to mobile mode');
+    console.log('[LOAD] Switching to mobile mode');
 
     if (hamburger) {
       hamburger.style.display = 'flex';
@@ -143,7 +143,7 @@ function updateNavigationDisplay() {
     document.body.classList.add('mobile-nav-active');
   } else {
     // Desktop mode (1025px and above)
-    console.log('🔄 Switching to desktop mode');
+    console.log('[LOAD] Switching to desktop mode');
 
     if (hamburger) {
       hamburger.style.display = 'none';
@@ -165,13 +165,13 @@ function updateNavigationDisplay() {
 
 // Active Navigation Link Highlighting - Enhanced and Fixed
 function initializeActiveNavigation() {
-  console.log('🎯 Initializing active navigation highlighting...');
+  console.log('[TARGET] Initializing active navigation highlighting...');
 
   // Find all navigation links (both desktop and mobile)
   const allNavLinks = document.querySelectorAll('.nav-link');
 
   if (allNavLinks.length === 0) {
-    console.warn('⚠️ No navigation links found with class .nav-link');
+    console.warn('[WARNING] No navigation links found with class .nav-link');
     return;
   }
 
@@ -192,7 +192,7 @@ function initializeActiveNavigation() {
     }
   }
 
-  console.log(`📍 Current page: ${currentPath}`);
+  console.log(`[INFO] Current page: ${currentPath}`);
 
   allNavLinks.forEach(link => {
     const href = link.getAttribute('href');
@@ -220,18 +220,18 @@ function initializeActiveNavigation() {
     // Apply active class
     if (isMatch) {
       link.classList.add('nav-link-active');
-      console.log(`✅ Active link set: ${linkPath}`);
+      console.log(`[SUCCESS] Active link set: ${linkPath}`);
     } else {
       link.classList.remove('nav-link-active');
     }
   });
 
-  console.log('✅ Active navigation highlighting completed');
+  console.log('[SUCCESS] Active navigation highlighting completed');
 }
 
 // Initialize responsive navigation with better error handling
 function initializeResponsiveNavigation() {
-  console.log('📱 Initializing responsive navigation...');
+  console.log('[INFO] Initializing responsive navigation...');
 
   // Initial setup
   updateNavigationDisplay();
@@ -254,7 +254,7 @@ function initializeResponsiveNavigation() {
   const mediaQuery = window.matchMedia('(max-width: 1024px)');
 
   function handleMediaQueryChange(e) {
-    console.log(`📺 Media query changed: ${e.matches ? 'mobile' : 'desktop'}`);
+    console.log(`[INFO] Media query changed: ${e.matches ? 'mobile' : 'desktop'}`);
     setTimeout(updateNavigationDisplay, 50); // Small delay to ensure proper state
   }
 
@@ -266,18 +266,18 @@ function initializeResponsiveNavigation() {
       mediaQuery.addListener(handleMediaQueryChange);
     }
   } catch (error) {
-    console.warn('⚠️ Media query listeners not supported:', error);
+    console.warn('[WARNING] Media query listeners not supported:', error);
   }
 
   // Call immediately to set initial state
   handleMediaQueryChange(mediaQuery);
 
-  console.log('✅ Responsive navigation initialized');
+  console.log('[SUCCESS] Responsive navigation initialized');
 }
 
 // Initialize all navigation features - Main Function with better error handling
 function initializeNavigation() {
-  console.log('🚀 Starting complete navigation initialization...');
+  console.log('[LAUNCH] Starting complete navigation initialization...');
 
   try {
     // Wait for DOM if needed
@@ -298,7 +298,7 @@ function initializeNavigation() {
       }, 50);
     }
 
-    console.log('✅ Navigation initialization scheduled');
+    console.log('[SUCCESS] Navigation initialization scheduled');
   } catch (error) {
     console.error('❌ Navigation initialization failed:', error);
   }
@@ -306,7 +306,7 @@ function initializeNavigation() {
 
 // Manual test function - Enhanced
 window.testCustomNavigation = function () {
-  console.log('🧪 Manual navigation test');
+  console.log('[TEST] Manual navigation test');
   console.log('Screen width:', window.innerWidth);
   console.log('Is mobile:', isMobileScreen());
   console.log('Document ready state:', document.readyState);
@@ -336,6 +336,6 @@ window.navigationUtils = {
 
 // Auto-initialize when script loads
 if (typeof window !== 'undefined') {
-  console.log('🔄 Auto-initializing navigation...');
+  console.log('[LOAD] Auto-initializing navigation...');
   initializeNavigation();
 }

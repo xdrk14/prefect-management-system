@@ -619,4 +619,4 @@ PrefectTableManager.prototype.init = async function () {
   this.initAddPrefectManager();
 };
 
-console.log('✅ Add New Prefect Manager loaded successfully!');
+console.log('[SUCCESS] Add New Prefect Manager loaded successfully!');
