@@ -506,12 +506,12 @@ class RealTimeUpdateManager {
 
       // Check if we've received updates recently
       const timeSinceLastUpdate = Date.now() - this.lastUpdateTimestamp;
-      if (timeSinceLastUpdate > 30000) {
-        // 30 seconds
+      if (timeSinceLastUpdate > 60000) {
+        // 60 seconds
         console.log('[WARNING] No updates received recently, checking connection');
         this.checkConnection();
       }
-    }, 15000); // Send heartbeat every 15 seconds
+    }, 30000); // Send heartbeat every 30 seconds
   }
 
   sendHeartbeat() {

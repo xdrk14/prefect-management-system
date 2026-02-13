@@ -1,5 +1,6 @@
 // Enhanced Audit Log Management System - Safe for All Pages
-class AuditLogManager {
+if (typeof window.AuditLogManager === 'undefined') {
+  window.AuditLogManager = class AuditLogManager {
   constructor() {
     this.db = null;
     this.auth = null;
@@ -483,12 +484,15 @@ class AuditLogManager {
     }
   }
 
-  showClearConfirmation() {
-    if (
-      confirm(
-        'Are you sure you want to clear old audit log entries? This will remove entries older than 90 days and cannot be undone.'
-      )
-    ) {
+  async showClearConfirmation() {
+    const confirmed = await this.showConfirmationModal({
+        title: 'Clear Old Audit Logs?',
+        message: 'Are you sure you want to clear old audit log entries? This will remove entries older than 90 days and cannot be undone.',
+        confirmText: 'Clear Logs',
+        confirmColor: 'red'
+    });
+
+    if (confirmed) {
       this.clearOldLogs();
     }
   }
@@ -792,14 +796,30 @@ class AuditLogManager {
 
   getChangeSummary(oldValues, newValues) {
     const changes = [];
+    if (!oldValues || !newValues) return '';
 
     for (const key in newValues) {
-      if (oldValues[key] !== newValues[key]) {
-        changes.push(`${key}: "${oldValues[key]}" → "${newValues[key]}"`);
+      if (JSON.stringify(oldValues[key]) !== JSON.stringify(newValues[key])) {
+        if (key === 'permissions' && typeof newValues[key] === 'object' && newValues[key] !== null) {
+          const permChanges = [];
+          const oldPerms = oldValues[key] || {};
+          const newPerms = newValues[key] || {};
+          
+          Object.keys({ ...oldPerms, ...newPerms }).forEach(pKey => {
+            if (oldPerms[pKey] !== newPerms[pKey]) {
+              permChanges.push(`${pKey}: ${oldPerms[pKey] || 'none'} → ${newPerms[pKey] || 'none'}`);
+            }
+          });
+          
+          if (permChanges.length > 0) {
+            changes.push(`Permissions: [${permChanges.join(', ')}]`);
+          }
+        } else {
+          changes.push(`${key}: "${oldValues[key]}" → "${newValues[key]}"`);
+        }
       }
     }
-
-    return changes.join(', ');
+    return changes.join('; ');
   }
 
   destroy() {
@@ -807,7 +827,62 @@ class AuditLogManager {
       this.unsubscribeAuditLog();
       this.unsubscribeAuditLog = null;
     }
-    this.isListening = false;
+    this.isSyncing = false;
+  }
+
+  // Premium Confirmation Modal Utility (Shared Pattern)
+  async showConfirmationModal({ title, message, confirmText, confirmColor }) {
+    const colorClass = confirmColor || 'blue';
+    const modalHTML = `
+      <div id="auditConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] opacity-0 transition-opacity duration-300 px-4">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 transition-transform duration-300 overflow-hidden text-left">
+              <div class="p-6">
+                  <div class="flex items-start">
+                      <div class="flex-shrink-0 bg-${colorClass}-100 rounded-full p-2 mr-3">
+                          <svg class="w-6 h-6 text-${colorClass}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                          </svg>
+                      </div>
+                      <div>
+                          <h3 class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+                          <div class="text-gray-600 text-sm whitespace-pre-line">${message}</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                  <button id="auditCancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">
+                      Cancel
+                  </button>
+                  <button id="auditActionBtn" class="px-4 py-2 bg-${colorClass}-600 text-white rounded-lg hover:bg-${colorClass}-700 font-medium shadow-md transition-all">
+                      ${confirmText || 'Confirm'}
+                  </button>
+              </div>
+          </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    const modal = document.getElementById('auditConfirmModal');
+    const okBtn = document.getElementById('auditActionBtn');
+    const cancelBtn = document.getElementById('auditCancelBtn');
+
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.transform').classList.remove('scale-95');
+        modal.querySelector('.transform').classList.add('scale-100');
+    });
+
+    const close = () => {
+        modal.classList.add('opacity-0');
+        modal.querySelector('.transform').classList.remove('scale-100');
+        modal.querySelector('.transform').classList.add('scale-95');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    return new Promise((resolve) => {
+        okBtn.onclick = () => { close(); resolve(true); };
+        cancelBtn.onclick = () => { close(); resolve(false); };
+    });
   }
 }
 
@@ -840,10 +915,12 @@ window.auditLog = {
     auditLogManager?.logActivity(activity, details, additionalData),
 };
 
-console.log('✅ Safe Audit Log Manager loaded successfully!');
-console.log(
-  '🔍 Page detection:',
-  document.getElementById('auditLogTableBody')
-    ? 'Accounts page with UI'
-    : 'House page - background only'
-);
+  console.log(
+    '🔍 Page detection:',
+    document.getElementById('auditLogTableBody')
+      ? 'Accounts page with UI'
+      : 'House page - background only'
+  );
+
+  window.auditLogManager = new window.AuditLogManager();
+}

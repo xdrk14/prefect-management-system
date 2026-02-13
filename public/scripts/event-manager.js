@@ -24,6 +24,68 @@ class EventManager {
     this.init();
   }
 
+  // Premium Confirmation Modal Utility
+  async showConfirmationModal({ title, message, confirmText, confirmColor, onConfirm }) {
+    const colorClass = confirmColor || 'blue';
+    const modalHTML = `
+      <div id="eventConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] opacity-0 transition-opacity duration-300 px-4">
+          <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 transition-transform duration-300 overflow-hidden text-left">
+              <div class="p-6">
+                  <div class="flex items-start">
+                      <div class="flex-shrink-0 bg-${colorClass}-100 rounded-full p-2 mr-3">
+                          <svg class="w-6 h-6 text-${colorClass}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                          </svg>
+                      </div>
+                      <div>
+                          <h3 class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+                          <div class="text-gray-600 text-sm whitespace-pre-line">${message}</div>
+                      </div>
+                  </div>
+              </div>
+              <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                  <button id="eventCancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">
+                      Cancel
+                  </button>
+                  <button id="eventActionBtn" class="px-4 py-2 bg-${colorClass}-600 text-white rounded-lg hover:bg-${colorClass}-700 font-medium shadow-md transition-all">
+                      ${confirmText || 'Confirm'}
+                  </button>
+              </div>
+          </div>
+      </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    const modal = document.getElementById('eventConfirmModal');
+    const okBtn = document.getElementById('eventActionBtn');
+    const cancelBtn = document.getElementById('eventCancelBtn');
+
+    requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        modal.querySelector('.transform').classList.remove('scale-95');
+        modal.querySelector('.transform').classList.add('scale-100');
+    });
+
+    const close = () => {
+        modal.classList.add('opacity-0');
+        modal.querySelector('.transform').classList.remove('scale-100');
+        modal.querySelector('.transform').classList.add('scale-95');
+        setTimeout(() => modal.remove(), 300);
+    };
+
+    return new Promise((resolve) => {
+        okBtn.onclick = async () => {
+            if (onConfirm) await onConfirm();
+            close();
+            resolve(true);
+        };
+        cancelBtn.onclick = () => {
+            close();
+            resolve(false);
+        };
+    });
+  }
+
   async init() {
     console.log('[LOAD] Initializing Event Management System...');
 
@@ -378,9 +440,12 @@ class EventManager {
       console.log('[INFO] Found attendees:', attendees.length);
 
       if (attendees.length > 0) {
-        const confirmed = confirm(
-          `This event has ${attendees.length} attendees. Deleting this event will also remove all attendance records. Are you sure you want to continue?`
-        );
+        const confirmed = await this.showConfirmationModal({
+            title: 'Confirm Event Deletion',
+            message: `This event has ${attendees.length} attendees. Deleting this event will also remove all attendance records.\n\nAre you sure you want to continue?`,
+            confirmText: 'Delete Event & Records',
+            confirmColor: 'red'
+        });
         if (!confirmed) return false;
       }
 
@@ -799,7 +864,7 @@ class EventManager {
                     </button>
                     <button onclick="eventManager.showDeleteConfirmation('${eventId}', '${eventType}')" 
                             class="btn btn-danger text-xs" title="Delete Event">
-                        <i class="icon icon-delete"></i>
+                        &#x2715
                     </button>
                 </div>
             </div>
@@ -1281,7 +1346,14 @@ class EventManager {
     const { eventId, eventType } = this.currentEventForAttendance;
     const attendee = this.currentAttendees.find(a => a.PrefectID === prefectId);
 
-    if (!confirm(`Remove ${attendee?.FullName || 'this prefect'} from the event?`)) {
+    const confirmed = await this.showConfirmationModal({
+        title: 'Remove Attendee?',
+        message: `Are you sure you want to remove ${attendee?.FullName || 'this prefect'} from the event?`,
+        confirmText: 'Remove',
+        confirmColor: 'red'
+    });
+    
+    if (!confirmed) {
       return;
     }
 

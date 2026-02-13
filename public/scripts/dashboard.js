@@ -717,53 +717,74 @@ class UIRenderer {
     const container = document.getElementById('performanceTable');
     if (!container) return;
 
+    // Clear existing content
+    container.innerHTML = '';
+
     const sortedPrefects = [...data.allPrefects].sort(
       (a, b) => b.attendancePercentage - a.attendancePercentage
     );
 
-    const tableRows = sortedPrefects
-      .map(
-        (prefect, index) => `
-            <tr class="table-row hover:bg-gray-50 transition-colors">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        ${this.getRankMedal(index + 1)}
-                        <span class="ml-2 font-semibold">${index + 1}</span>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.PrefectID}</td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">W0-${prefect.PrefectID.split('-')[1] || '000'}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
-                            <span class="text-sm font-semibold text-gray-700">${prefect.FullName.charAt(0)}</span>
-                        </div>
-                        <div>
-                            <div class="text-sm font-medium text-gray-900">${prefect.FullName}</div>
-                            <div class="text-sm text-gray-500">${prefect.DateOfBirth || 'N/A'}</div>
-                        </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.Position}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${CONFIG.COLORS[prefect.house.toLowerCase()].bg} bg-opacity-80 ${CONFIG.COLORS[prefect.house.toLowerCase()].text}">
-                        ${prefect.house}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.DateOfBirth || 'N/A'}</td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="text-sm">
-                        <div class="font-bold ${prefect.attendancePercentage >= 80 ? 'text-green-600' : prefect.attendancePercentage >= 40 ? 'text-yellow-600' : 'text-red-600'}">${prefect.attendancePercentage}% attendance</div>
-                        <div class="font-semibold text-gray-900">${prefect.performance}pts performance</div>
-                        <div class="text-xs text-gray-500">${prefect.totalParticipation || 0}/${prefect.totalPossibleEvents || 0} events</div>
-                    </div>
-                </td>
-            </tr>
-        `
-      )
-      .join('');
+    const BATCH_SIZE = 20;
+    let currentIndex = 0;
 
-    container.innerHTML = tableRows;
+    const renderBatch = () => {
+      const batch = sortedPrefects.slice(currentIndex, currentIndex + BATCH_SIZE);
+      if (batch.length === 0) return;
+
+      const fragment = document.createDocumentFragment();
+
+      batch.forEach((prefect, i) => {
+        const index = currentIndex + i;
+        const tr = document.createElement('tr');
+        tr.className = 'table-row hover:bg-gray-50 transition-colors';
+        tr.innerHTML = `
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    ${this.getRankMedal(index + 1)}
+                    <span class="ml-2 font-semibold">${index + 1}</span>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.PrefectID}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">W0-${prefect.PrefectID.split('-')[1] || '000'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="flex items-center">
+                    <div class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center mr-3">
+                        <span class="text-sm font-semibold text-gray-700">${prefect.FullName.charAt(0)}</span>
+                    </div>
+                    <div>
+                        <div class="text-sm font-medium text-gray-900">${prefect.FullName}</div>
+                        <div class="text-sm text-gray-500">${prefect.DateOfBirth || 'N/A'}</div>
+                    </div>
+                </div>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.Position}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${CONFIG.COLORS[prefect.house.toLowerCase()].bg} bg-opacity-80 ${CONFIG.COLORS[prefect.house.toLowerCase()].text}">
+                    ${prefect.house}
+                </span>
+            </td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${prefect.DateOfBirth || 'N/A'}</td>
+            <td class="px-6 py-4 whitespace-nowrap">
+                <div class="text-sm">
+                    <div class="font-bold ${prefect.attendancePercentage >= 80 ? 'text-green-600' : prefect.attendancePercentage >= 40 ? 'text-yellow-600' : 'text-red-600'}">${prefect.attendancePercentage}% attendance</div>
+                    <div class="font-semibold text-gray-900">${prefect.performance}pts performance</div>
+                    <div class="text-xs text-gray-500">${prefect.totalParticipation || 0}/${prefect.totalPossibleEvents || 0} events</div>
+                </div>
+            </td>
+        `;
+        fragment.appendChild(tr);
+      });
+
+      container.appendChild(fragment);
+      currentIndex += BATCH_SIZE;
+
+      if (currentIndex < sortedPrefects.length) {
+        requestAnimationFrame(renderBatch);
+      }
+    };
+
+    // Start rendering
+    requestAnimationFrame(renderBatch);
   }
 
   static getRankMedal(rank) {

@@ -1,0 +1,101 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    // Helper function to get user data from Firestore
+    function getUserData() {
+      return exists(/databases/$(database)/documents/userRoles/$(request.auth.token.email))
+        ? get(/databases/$(database)/documents/userRoles/$(request.auth.token.email)).data
+        : null;
+    }
+    
+    // Check if user is the primary hardcoded admin
+    function isPrimaryAdmin() {
+      return isAuthenticated() && request.auth.token.email == 'hasthij29@gmail.com';
+    }
+
+    // [OVERHAUL] Granular Permission Check
+    // Checks if the user has a specific level ('view' or 'edit') for a 'page'
+    function hasPagePermission(page, level) {
+      return isPrimaryAdmin() ? true :
+             (getUserData() != null && getUserData().active == true) ? 
+             (
+               // Check Granular Permissions (New System)
+               (getUserData().permissions != null && getUserData().permissions[page] != null) ?
+               (
+                 (level == 'edit' && getUserData().permissions[page] == 'edit') || 
+                 (level == 'view' && (getUserData().permissions[page] == 'edit' || getUserData().permissions[page] == 'view'))
+               ) :
+               // Fallback to Legacy Roles (Migration)
+               (
+                 (page == 'accounts' && getUserData().role == 'FULL_ACCESS_EDIT') ||
+                 (page == 'central' && (
+                    (level == 'edit' && getUserData().role == 'FULL_ACCESS_EDIT') || 
+                    (level == 'view' && (getUserData().role == 'FULL_ACCESS_EDIT' || getUserData().role == 'FULL_ACCESS_VIEW'))
+                 )) ||
+                 ((page != 'accounts' && page != 'central') && (
+                    (level == 'edit' && (getUserData().role == 'FULL_ACCESS_EDIT' || getUserData().role == 'LIMITED_ACCESS_EDIT')) || 
+                    (level == 'view' && getUserData().role != null)
+                 ))
+               )
+             ) : false;
+    }
+
+    // Helper for administrative tasks (User Management)
+    function isAdmin() {
+      return hasPagePermission('accounts', 'edit');
+    }
+    
+    // Helper for seeing management data (Manager or Admin level)
+    function isManager() {
+      return hasPagePermission('accounts', 'view') || hasPagePermission('central', 'view');
+    }
+
+    // Safety check for bootstrapping
+    function existsAnyAdmin() {
+      return exists(/databases/$(database)/documents/userRoles/hasthij29@gmail.com) ||
+             exists(/databases/$(database)/documents/systemConfig/hasAdmins);
+    }
+
+    // User Roles Collection
+    match /userRoles/{email} {
+      // Allow read if you have 'accounts' View/Edit permission OR if checking own profile
+      allow read: if hasPagePermission('accounts', 'view') || (isAuthenticated() && email == request.auth.token.email);
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+      
+      // Bootstrap rules
+      allow create: if isAuthenticated() && !existsAnyAdmin();
+    }
+    
+    // System Configuration
+    match /systemConfig/{document} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+    
+    // Account Audit Log
+    match /accountAuditLog/{logId} {
+      allow read: if isManager();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAdmin();
+    }
+    
+    // System Audit Log
+    match /auditLog/{logId} {
+      allow read: if isManager();
+      allow create: if isAuthenticated() && request.auth.token.email != null;
+      allow update, delete: if isAdmin();
+    }
+    
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

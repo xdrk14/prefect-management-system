@@ -45,7 +45,7 @@
   } else {
     // Wait for Firebase SDK to load
     const checkFirebase = () => {
-      if (typeof firebase !== 'undefined') {
+      if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' && typeof firebase.firestore === 'function') {
         initFirebase();
       } else {
         setTimeout(checkFirebase, 100);
@@ -54,3 +54,7 @@
     checkFirebase();
   }
 })();
+ document.addEventListener("DOMContentLoaded", () => {
+    const el = document.getElementById("currentYear");
+    if (el) el.textContent = String(new Date().getFullYear());
+  });

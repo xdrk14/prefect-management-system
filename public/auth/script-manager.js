@@ -51,12 +51,13 @@
       console.log('[SCRIPT-MANAGER] Waiting for auth system...');
 
       const checkAuth = () => {
-        if (window.authSystem && window.authSystem.userRole) {
+        if (window.authSystem && window.authSystem.authCheckCompleted) {
           this.userRole = window.authSystem.userRole;
-          this.isViewOnly = this.userRole.includes('VIEW');
+          this.isViewOnly = window.authSystem.isViewOnly;
 
-          console.log(`[SCRIPT-MANAGER] User role detected: ${this.userRole}`);
-          console.log(`[SCRIPT-MANAGER] Is view-only: ${this.isViewOnly}`);
+          console.log(`[SCRIPT-MANAGER] Auth system check complete`);
+          console.log(`[SCRIPT-MANAGER] User role: ${this.userRole}`);
+          console.log(`[SCRIPT-MANAGER] Is view-only for this page: ${this.isViewOnly}`);
 
           if (this.isViewOnly) {
             this.enforceViewOnlyMode();

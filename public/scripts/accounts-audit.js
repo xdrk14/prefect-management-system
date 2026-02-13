@@ -25,8 +25,8 @@
     }
 
     setupRealtimeListener() {
-      // Listen for real-time updates to audit log
-      window.firebaseDb
+      if (this.unsubscribeAudit) this.unsubscribeAudit();
+      this.unsubscribeAudit = window.firebaseDb
         .collection('accountAuditLog')
         .orderBy('timestamp', 'desc')
         .limit(100)
@@ -339,11 +339,27 @@
         fields.forEach(field => {
           if (field === 'updatedAt' || field === 'updatedBy') return; // Skip meta fields
 
-          const oldValue = oldData?.[field];
-          const newValue = newData?.[field];
+          const oldValue = oldData ? oldData[field] : undefined;
+          const newValue = newData ? newData[field] : undefined;
 
-          if (oldValue !== newValue) {
-            details += `
+          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            if (field === 'permissions' && typeof newValue === 'object' && newValue !== null) {
+                const oldPerms = oldValue || {};
+                const newPerms = newValue || {};
+                const allPermKeys = new Set([...Object.keys(oldPerms), ...Object.keys(newPerms)]);
+                
+                allPermKeys.forEach(pKey => {
+                    if (oldPerms[pKey] !== newPerms[pKey]) {
+                        details += `
+                            <div class="flex justify-between pl-4 text-gray-500 italic">
+                                <span>↳ ${pKey}:</span>
+                                <span>${oldPerms[pKey] || 'none'} → ${newPerms[pKey] || 'none'}</span>
+                            </div>
+                        `;
+                    }
+                });
+            } else {
+                details += `
                             <div class="flex justify-between">
                                 <span class="font-medium">${this.formatFieldName(field)}:</span>
                                 <span>
@@ -353,6 +369,7 @@
                                 </span>
                             </div>
                         `;
+            }
           }
         });
         details += '</div>';
@@ -532,8 +549,20 @@
           const oldValue = oldData?.[field];
           const newValue = newData?.[field];
 
-          if (oldValue !== newValue) {
-            changes.push(`${field}: ${oldValue} → ${newValue}`);
+          if (JSON.stringify(oldValue) !== JSON.stringify(newValue)) {
+            if (field === 'permissions' && typeof newValue === 'object') {
+                const pChanges = [];
+                const oldPerms = oldValue || {};
+                const newPerms = newValue || {};
+                Object.keys({...oldPerms, ...newPerms}).forEach(pk => {
+                    if (oldPerms[pk] !== newPerms[pk]) {
+                        pChanges.push(`${pk}: ${oldPerms[pk]||'none'}->${newPerms[pk]||'none'}`);
+                    }
+                });
+                changes.push(`Permissions: [${pChanges.join(', ')}]`);
+            } else {
+                changes.push(`${field}: ${oldValue} → ${newValue}`);
+            }
           }
         });
       }
@@ -608,5 +637,9 @@
   }
 
   // Initialize and expose globally
+  if (window.accountsAudit) {
+    console.log('[ACCOUNTS-AUDIT] Already initialized.');
+    return;
+  }
   window.accountsAudit = new AccountsAudit();
 })();

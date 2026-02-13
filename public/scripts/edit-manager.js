@@ -697,74 +697,132 @@ if (typeof window.editManagerInitialized === 'undefined') {
       }
     },
 
-    // [LAUNCH] ULTRA-FAST confirmation dialog - uses native browser confirm()
+    // [LAUNCH] Deprecated - now uses the premium custom modal
     showConfirmationFast(message, onConfirm) {
-      if (confirm(message)) {
-        onConfirm(true);
-      } else {
-        onConfirm(false);
-      }
+      this.showConfirmation(message, onConfirm);
     },
 
-    // [LAUNCH] ULTRA-FAST prompt dialog - uses native browser prompt()
+    // [LAUNCH] Deprecated - now uses the premium custom modal
     showPromptFast(message, onConfirm) {
-      const result = prompt(message);
-      onConfirm(result);
+      this.showPrompt(message, onConfirm);
     },
 
-    // Show confirmation dialog (custom modal version)
-    showConfirmation(message, onConfirm) {
-      const modalHTML = `
-                <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-                    <div class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
-                        <p class="text-lg font-semibold mb-4">${message}</p>
-                        <div class="flex justify-end space-x-3">
-                            <button id="confirmCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Cancel</button>
-                            <button id="confirmOkBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">OK</button>
+    // Show confirmation dialog (Premium version)
+    async showConfirmation(message, onConfirm) {
+        // Simple message formatting for premium modal (wrapping in bold if it looks like a title)
+        const isHTML = message.includes('<');
+        const title = isHTML ? (message.split('<br')[0] || 'Confirmation') : 'Are you sure?';
+        const body = isHTML ? message : message;
+
+        // Reuse standard Premium Modal layout
+        const modalHTML = `
+            <div id="premiumConfirmModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] opacity-0 transition-opacity duration-300 px-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 transition-transform duration-300 overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-start">
+                            <div class="flex-shrink-0 bg-blue-100 rounded-full p-2 mr-3">
+                                <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-2">${isHTML ? 'Action Required' : title}</h3>
+                                <div class="text-gray-600 text-sm whitespace-pre-line">${body}</div>
+                            </div>
                         </div>
                     </div>
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                        <button id="pConfirmCancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">
+                            Cancel
+                        </button>
+                        <button id="pConfirmOkBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium shadow-md transition-all">
+                            Confirm
+                        </button>
+                    </div>
                 </div>
-            `;
-      document.body.insertAdjacentHTML('beforeend', modalHTML);
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-      const modal = document.getElementById('confirmationModal');
-      document.getElementById('confirmOkBtn').onclick = () => {
-        onConfirm(true);
-        modal.remove();
-      };
-      document.getElementById('confirmCancelBtn').onclick = () => {
-        onConfirm(false);
-        modal.remove();
-      };
+        const modal = document.getElementById('premiumConfirmModal');
+        const okBtn = document.getElementById('pConfirmOkBtn');
+        const cancelBtn = document.getElementById('pConfirmCancelBtn');
+
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.transform').classList.remove('scale-95');
+            modal.querySelector('.transform').classList.add('scale-100');
+        });
+
+        const close = () => {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => modal.remove(), 300);
+        };
+
+        okBtn.onclick = () => { close(); if(onConfirm) onConfirm(true); };
+        cancelBtn.onclick = () => { close(); if(onConfirm) onConfirm(false); };
     },
 
-    // Show prompt dialog (custom modal version)
-    showPrompt(message, onConfirm) {
-      const modalHTML = `
-                <div id="promptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100]">
-                    <div class="bg-white rounded-lg p-6 shadow-xl max-w-sm w-full">
-                        <p class="text-lg font-semibold mb-4">${message}</p>
-                        <input type="text" id="promptInput" class="w-full p-2 border border-gray-300 rounded mb-4" />
-                        <div class="flex justify-end space-x-3">
-                            <button id="promptCancelBtn" class="bg-gray-300 hover:bg-gray-400 text-gray-800 px-4 py-2 rounded">Cancel</button>
-                            <button id="promptOkBtn" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">OK</button>
+    // Show prompt dialog (Premium version)
+    async showPrompt(message, onConfirm) {
+        const modalHTML = `
+            <div id="premiumPromptModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[200] opacity-0 transition-opacity duration-300 px-4">
+                <div class="bg-white rounded-2xl shadow-2xl max-w-lg w-full transform scale-95 transition-transform duration-300 overflow-hidden">
+                    <div class="p-6">
+                        <div class="flex items-start mb-4">
+                            <div class="flex-shrink-0 bg-orange-100 rounded-full p-2 mr-3">
+                                <svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-1">Confirmation Required</h3>
+                                <p class="text-gray-600 text-sm">${message}</p>
+                            </div>
                         </div>
+                        <input type="text" id="pPromptInput" 
+                               class="w-full p-3 border-2 border-orange-200 rounded-xl focus:ring-4 focus:ring-orange-100 focus:border-orange-500 outline-none transition-all font-medium text-gray-800"
+                               placeholder="Type here..." autofocus />
+                    </div>
+                    <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                        <button id="pPromptCancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium transition-colors">
+                            Cancel
+                        </button>
+                        <button id="pPromptOkBtn" class="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 font-medium shadow-md transition-all">
+                            Proceed
+                        </button>
                     </div>
                 </div>
-            `;
-      document.body.insertAdjacentHTML('beforeend', modalHTML);
+            </div>
+        `;
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-      const modal = document.getElementById('promptModal');
-      const input = document.getElementById('promptInput');
-      document.getElementById('promptOkBtn').onclick = () => {
-        onConfirm(input.value);
-        modal.remove();
-      };
-      document.getElementById('promptCancelBtn').onclick = () => {
-        onConfirm(null);
-        modal.remove();
-      };
-      input.focus();
+        const modal = document.getElementById('premiumPromptModal');
+        const input = document.getElementById('pPromptInput');
+        const okBtn = document.getElementById('pPromptOkBtn');
+        const cancelBtn = document.getElementById('pPromptCancelBtn');
+
+        requestAnimationFrame(() => {
+            modal.classList.remove('opacity-0');
+            modal.querySelector('.transform').classList.remove('scale-95');
+            modal.querySelector('.transform').classList.add('scale-100');
+            input.focus();
+        });
+
+        const close = () => {
+            modal.classList.add('opacity-0');
+            modal.querySelector('.transform').classList.remove('scale-100');
+            modal.querySelector('.transform').classList.add('scale-95');
+            setTimeout(() => modal.remove(), 300);
+        };
+
+        // Handle Enter key
+        input.onkeyup = (e) => { if (e.key === 'Enter') okBtn.click(); };
+
+        okBtn.onclick = () => { const val = input.value; close(); if(onConfirm) onConfirm(val); };
+        cancelBtn.onclick = () => { close(); if(onConfirm) onConfirm(null); };
     },
 
     // [LAUNCH] ULTRA-FAST Save all changes - minimal verification, instant execution

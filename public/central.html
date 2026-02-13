@@ -26,7 +26,7 @@
     <script src="scripts/audit-log-manager.js"></script>
     <link rel="stylesheet" href="../styles/modal-styles.css" />
     <script src="scripts/prefect-table-manager.js"></script>
-    <script src="/scripts/add-prefect-manager.js"></script>
+    <script src="scripts/add-prefect-manager.js"></script>
     <script src="scripts/edit-manager.js"></script>
     <script src="scripts/prefect-search-filter.js"></script>
     <!-- ADD THIS -->
@@ -234,13 +234,13 @@
         <tbody></tbody>
       </table>
     </main>
-    <footer class="bg-dark text-white mt-8 py-6 shadow-inner">
-      <div class="container mx-auto px-6 flex justify-center">
-        <p class="text-sm text-center">
-          &copy; 2025 Prefect Management System. All rights reserved.
-        </p>
-      </div>
-    </footer>
+    <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
+  <div class="container mx-auto px-6 flex justify-center">
+    <p class="text-sm text-center">
+      &copy; <span id="currentYear"></span> Prefect Management System. All rights reserved.
+    </p>
+  </div>
+</footer>
     <script src="/scripts/real-time-updater.js"></script>
   </body>
 </html>

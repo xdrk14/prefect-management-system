@@ -161,18 +161,15 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log('   - Features: Auto-expiration, middleware integration');
 
   // ===== OPTIMIZED DATABASE POOL =====
+// ===== OPTIMIZED DATABASE SETUP =====
   console.log('\n[DB] ===== ENHANCED DATABASE SETUP =====');
-  const dbPool = [];
-  const poolSize = Math.min(os.cpus().length * 2, 12); // Dynamic pool sizing
-  console.log(`[SYNC] Creating optimized database pool (${poolSize} connections)...`);
-
-  for (let i = 0; i < poolSize; i++) {
-    const db = new sqlite3.Database('./database/prefect_system.db', sqlite3.OPEN_READWRITE, err => {
-      if (err) {
-        console.error(`[ERROR] DB Connection ${i} failed:`, err.message);
-      } else {
-        // ENHANCED SQLite optimizations
-        db.run(`
+  // Use single connection with WAL mode for best SQLite concurrency
+  const db = new sqlite3.Database('./database/prefect_system.db', sqlite3.OPEN_READWRITE, err => {
+    if (err) {
+      console.error('[ERROR] DB Connection failed:', err.message);
+    } else {
+      // ENHANCED SQLite optimizations
+      db.run(`
                 PRAGMA foreign_keys=ON;
                 PRAGMA journal_mode=WAL;
                 PRAGMA synchronous=NORMAL;
@@ -182,27 +179,11 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
                 PRAGMA page_size=32768;
                 PRAGMA optimize;
             `);
-        console.log(`[SUCCESS] DB Connection ${i} optimized for ultra performance`);
-      }
-    });
-    dbPool.push(db);
-  }
-
-  // Load balancing with connection health tracking
-  let dbIndex = 0;
-  const connectionHealth = new Array(poolSize).fill(true);
-
-  const getDB = () => {
-    // Skip unhealthy connections
-    let attempts = 0;
-    while (!connectionHealth[dbIndex] && attempts < poolSize) {
-      dbIndex = (dbIndex + 1) % poolSize;
-      attempts++;
+      console.log('[SUCCESS] DB Connection optimized for performance (WAL Mode)');
     }
-    const selectedDB = dbPool[dbIndex];
-    dbIndex = (dbIndex + 1) % poolSize;
-    return selectedDB;
-  };
+  });
+
+  const getDB = () => db; // Simplified access
   console.log('\n[SECURITY] ===== SQL SECURITY SETUP =====');
   // SQL injection protection & query helpers
   const sqlCheck = query =>
@@ -2436,6 +2417,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
   console.log('\n[TARGET] ===== FINAL INITIALIZATION =====');
   // Real-time heartbeat interval
+  // Real-time heartbeat interval
   setInterval(() => {
     const activeConnections = connectedClients.size;
     if (activeConnections > 0) {
@@ -2455,7 +2437,22 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
       console.log('[CLEAN] Cleaned up old real-time updates');
     }
-  }, 5000); // Every 30 seconds
+
+    // [OPTIMIZATION] Clean up expired cache items to prevent memory leaks
+    if (cache.size > 0) {
+      const now = Date.now();
+      let expiredCount = 0;
+      for (const [key, value] of cache.entries()) {
+        if (value.expiry < now) {
+          cache.delete(key);
+          expiredCount++;
+        }
+      }
+      if (expiredCount > 0) {
+        console.log(`[CLEAN] Removed ${expiredCount} expired items from cache`);
+      }
+    }
+  }, 30000); // Increased to 30 seconds for better performance
   // START SERVER
   app.listen(PORT, () => {
     console.log('\n[SUCCESS] ===== SERVER SUCCESSFULLY STARTED =====');
@@ -2465,7 +2462,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     console.log(`[HOUSE] Houses Available: ${HOUSES.join(', ')}`);
     console.log(`[ID] Total API Routes: ${routeCount} endpoints`);
     console.log(`[DB] Cache System: Active (In-Memory Map)`);
-    console.log(`[DB] Database Pool: ${dbPool.length} connections`);
+    console.log(`[DB] Database Mode: Single Connection (WAL Mode)`);
     console.log(`[SECURITY] Security: SQL Injection Protection, Rate Limiting, CORS`);
     console.log(`[STATS] Performance: Multi-CPU Clustering, Connection Pooling`);
     console.log(`[INFO] Features: CRUD Operations, Analytics, Search, Bulk Operations`);
@@ -2570,18 +2567,13 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     console.log(`[DB] Cache Entries: ${cache.size}`);
     console.log('[DB] Closing database connections...');
 
-    Promise.all(
-      dbPool.map(
-        (db, index) =>
-          new Promise(resolve => {
-            db.close(err => {
-              if (err) console.error(`[ERROR] DB ${index} close error:`, err.message);
-              else console.log(`[SUCCESS] DB ${index} connection closed`);
-              resolve();
-            });
-          })
-      )
-    )
+    new Promise(resolve => {
+      db.close(err => {
+        if (err) console.error(`[ERROR] DB close error:`, err.message);
+        else console.log(`[SUCCESS] DB connection closed`);
+        resolve();
+      });
+    })
       .then(() => {
         console.log('[SUCCESS] All database connections closed successfully');
         console.log('[SUCCESS] Graceful shutdown completed');

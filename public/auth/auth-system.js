@@ -1,109 +1,34 @@
-// Fixed Auth System - Working with your existing setup
+// Advanced Auth System - Enforcement Layer
 // File: public/auth/auth-system.js
 (function () {
   'use strict';
 
+  // 1. IMMEDIATE PROTECTION: Show premium loading overlay
+  const isIndex = window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/');
+  if (!isIndex) {
+      const overlayHTML = `
+        <div id="auth-loading-overlay" style="position:fixed;top:0;left:0;width:100%;height:100%;background-color:#0d1b2a;z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s ease-out;color:white;font-family:sans-serif;">
+            <div style="width:50px;height:50px;border:3px solid rgba(255,255,255,0.1);border-top:3px solid #3b82f6;border-radius:50%;animation:auth-spin 1s linear infinite;margin-bottom:20px;"></div>
+            <div style="font-size:14px;letter-spacing:0.1em;text-transform:uppercase;opacity:0.8;font-weight:600;">Securely Loading...</div>
+            <style>
+                @keyframes auth-spin { to { transform: rotate(360deg); } }
+                body { overflow: hidden !important; }
+            </style>
+        </div>
+      `;
+      document.documentElement.insertAdjacentHTML('afterbegin', overlayHTML);
+  }
+
   class AdvancedAuthSystem {
     constructor() {
-      this.currentUser = null;
-      this.userRole = null;
       this.currentPage = this.getCurrentPage();
-      this.isViewOnly = false;
-      this.authCheckCompleted = false;
       this.init();
     }
 
     init() {
-      console.log('[AUTH-SYSTEM] Initializing for page:', this.currentPage);
-      this.waitForFirebase();
-    }
-
-    waitForFirebase() {
-      console.log('[AUTH-SYSTEM] Waiting for Firebase...');
-
-      let attempts = 0;
-      const maxAttempts = 10;
-
-      const checkFirebase = () => {
-        attempts++;
-        console.log(`[AUTH-SYSTEM] Firebase check attempt ${attempts}/${maxAttempts}`);
-
-        if (window.firebaseAuth && window.firebaseDb) {
-          console.log('[AUTH-SYSTEM] Firebase ready, setting up auth');
-          this.setupAuth();
-        } else if (attempts >= maxAttempts) {
-          console.error('[AUTH-SYSTEM] Firebase failed to load');
-          this.redirectToLogin();
-        } else {
-          setTimeout(checkFirebase, 500);
-        }
-      };
-
-      checkFirebase();
-
-      // Also listen for firebaseReady event
-      window.addEventListener('firebaseReady', () => {
-        if (!this.authCheckCompleted) {
-          this.setupAuth();
-        }
-      });
-    }
-
-    setupAuth() {
-      if (this.authCheckCompleted) {
-        return;
-      }
-
-      console.log('[AUTH-SYSTEM] Setting up auth state listener');
-
-      try {
-        window.firebaseAuth.onAuthStateChanged(async user => {
-          if (this.authCheckCompleted) {
-            return;
-          }
-
-          console.log('[AUTH-SYSTEM] Auth state changed:', user ? user.email : 'No user');
-
-          if (!user) {
-            console.log('[AUTH-SYSTEM] No user, redirecting to login');
-            this.authCheckCompleted = true;
-            this.redirectToLogin();
-            return;
-          }
-
-          const isValid = await this.validateUser(user);
-          if (!isValid) {
-            console.log('[AUTH-SYSTEM] User validation failed');
-            this.authCheckCompleted = true;
-            this.redirectToLogin();
-            return;
-          }
-
-          if (!this.hasPageAccess()) {
-            console.log('[AUTH-SYSTEM] Page access denied');
-            this.authCheckCompleted = true;
-            this.showAccessDenied();
-            return;
-          }
-
-          console.log('[AUTH-SYSTEM] Access granted');
-          this.authCheckCompleted = true;
-          this.setupUserInterface();
-
-          // Emit a global event so other parts of the UI (edit manager, table) can react
-          try {
-            window.dispatchEvent(
-              new CustomEvent('auth:ready', { detail: { userRole: this.userRole } })
-            );
-            console.log('[AUTH-SYSTEM] Dispatched auth:ready event');
-          } catch (e) {
-            console.warn('[AUTH-SYSTEM] Failed to dispatch auth:ready event', e);
-          }
-        });
-      } catch (error) {
-        console.error('[AUTH-SYSTEM] Error setting up auth:', error);
-        this.redirectToLogin();
-      }
+      console.log('[AUTH-SYSTEM] Monitoring:', this.currentPage);
+      if (this.currentPage === 'index.html' || this.currentPage === '') return;
+      this.waitForAuth();
     }
 
     getCurrentPage() {
@@ -111,279 +36,204 @@
       return path.substring(path.lastIndexOf('/') + 1) || 'index.html';
     }
 
-    async validateUser(user) {
-      try {
-        console.log('[AUTH-SYSTEM] Validating user:', user.email);
-
-        const userDoc = await window.firebaseDb.collection('userRoles').doc(user.email).get();
-
-        if (!userDoc.exists) {
-          console.log('[AUTH-SYSTEM] User not found in database');
-
-          // Try to list existing users for debugging
-          try {
-            const allUsers = await window.firebaseDb.collection('userRoles').limit(5).get();
-            console.log(
-              '[AUTH-SYSTEM] Existing users:',
-              allUsers.docs.map(doc => doc.id)
-            );
-
-            // If no users exist, create a default one
-            if (allUsers.docs.length === 0) {
-              console.log('[AUTH-SYSTEM] No users found, creating default user');
-              await this.createDefaultUser(user.email);
-              return await this.validateUser(user);
-            }
-          } catch (listError) {
-            console.error('[AUTH-SYSTEM] Could not list users:', listError);
-          }
-
-          return false;
-        }
-
-        const userData = userDoc.data();
-        console.log('[AUTH-SYSTEM] User data:', userData);
-
-        if (userData.active === false) {
-          console.log('[AUTH-SYSTEM] User is inactive');
-          return false;
-        }
-
-        this.currentUser = user;
-        this.userRole = userData.role;
-        this.isViewOnly = this.userRole && this.userRole.includes('VIEW');
-
-        console.log('[AUTH-SYSTEM] User validated with role:', this.userRole);
-        return true;
-      } catch (error) {
-        console.error('[AUTH-SYSTEM] Validation error:', error);
-        return false;
-      }
-    }
-
-    async createDefaultUser(email) {
-      try {
-        await window.firebaseDb.collection('userRoles').doc(email).set({
-          role: 'FULL_ACCESS_EDIT',
-          active: true,
-          name: 'Auto-created User',
-          createdAt: new Date(),
-          createdBy: 'system',
-        });
-        console.log('[AUTH-SYSTEM] Default user created');
-      } catch (error) {
-        console.error('[AUTH-SYSTEM] Failed to create default user:', error);
-      }
-    }
-
-    hasPageAccess() {
-      console.log('[AUTH-SYSTEM] Checking page access for:', this.currentPage);
-
-      const restrictedPages = {
-        'accounts.html': ['FULL_ACCESS_EDIT'],
-        'central.html': ['FULL_ACCESS_EDIT', 'FULL_ACCESS_VIEW'],
+    getPageKey(page) {
+      const mapping = {
+        'dashboard.html': 'dashboard',
+        'central.html': 'central',
+        'aquila.html': 'aquila',
+        'cetus.html': 'cetus',
+        'cygnus.html': 'cygnus',
+        'ursa.html': 'ursa',
+        'events.html': 'events',
+        'accounts.html': 'accounts',
+        'main.html': 'main'
       };
+      return mapping[page] || page.split('.')[0];
+    }
 
-      if (!restrictedPages[this.currentPage]) {
-        console.log('[AUTH-SYSTEM] Page not restricted');
-        return true;
-      }
-
-      const allowedRoles = restrictedPages[this.currentPage];
-      const hasAccess = allowedRoles.includes(this.userRole);
-
-      console.log('[AUTH-SYSTEM] Access check:', {
-        page: this.currentPage,
-        userRole: this.userRole,
-        allowedRoles: allowedRoles,
-        hasAccess: hasAccess,
+    waitForAuth() {
+      // Listener for Auth Manager ready event
+      window.addEventListener('auth:ready', (e) => {
+        const { permissions } = e.detail;
+        this.enforcePermissions(permissions);
       });
 
-      return hasAccess;
+      // Backup check in case we missed the event
+      const checkInterval = setInterval(() => {
+          if (window.authManager && window.authManager.permissions) {
+              clearInterval(checkInterval);
+              this.enforcePermissions(window.authManager.permissions);
+          }
+      }, 100);
+
+      // Safety timeout (8s) -> Redirect to login if auth hangs
+      setTimeout(() => {
+          const loading = document.getElementById('auth-loading-overlay');
+          if (loading) {
+             console.warn('[AUTH-SYSTEM] Auth timed out. Redirecting.');
+             window.location.href = 'index.html';
+          }
+      }, 8000);
     }
 
-    setupUserInterface() {
-      console.log('[AUTH-SYSTEM] Setting up UI');
-      this.hideRestrictedLinks();
+    enforcePermissions(permissions) {
+      if (!permissions) return;
+      
+      const pageKey = this.getPageKey(this.currentPage);
+      const perm = permissions[pageKey] || 'none';
 
-      if (this.isViewOnly) {
-        this.setupViewOnlyMode();
+      // Prevent redundant enforcement if already done for this page/perm
+      if (this.lastEnforcedPage === this.currentPage && this.lastEnforcedPerm === perm) {
+        return;
       }
 
-      this.blockRestrictedNavigation();
+      console.log(`[AUTH-SYSTEM] Enforcing: ${pageKey} -> ${perm}`);
+      this.lastEnforcedPage = this.currentPage;
+      this.lastEnforcedPerm = perm;
+      this.userRole = window.authManager?.userRole;
+      this.isViewOnly = (perm === 'view');
+
+      // 1. CHECK ACCESS
+      // Always allow main.html
+      const isAllowed = (pageKey === 'main') || (perm !== 'none');
+
+      if (!isAllowed) {
+        this.showAccessDeniedPopup();
+        return;
+      }
+
+      // 2. REVEAL CONTENT
+      this.revealContent();
+
+      // Signal completion for ScriptManager
+      this.authCheckCompleted = true;
+
+      // 3. UI SYNC (Hide links)
+      this.syncNavigation(permissions);
+
+      // 4. VIEW ONLY MODE
+      if (perm === 'view') {
+        this.setupViewOnlyMode();
+      }
     }
 
-    hideRestrictedLinks() {
-      const restrictedPages = this.getRestrictedPages();
-
-      restrictedPages.forEach(page => {
-        const selectors = [
-          `a[href="${page}"]`,
-          `a[href="./${page}"]`,
-          `.nav-link[data-page="${page}"]`,
-        ];
-
-        selectors.forEach(selector => {
-          const links = document.querySelectorAll(selector);
-          links.forEach(link => {
-            link.style.opacity = '0.5';
-            link.style.pointerEvents = 'none';
-            link.title = 'Access restricted for your role';
-            setTimeout(() => {
-              link.style.display = 'none';
-            }, 300);
-          });
+    showAccessDeniedPopup() {
+        console.warn('[AUTH-SYSTEM] 🚫 Access Denied. Showing Popup.');
+        
+        // SECURITY: Clear the entire body content so restricted info is definitely gone.
+        document.body.innerHTML = '';
+        
+        const overlay = document.createElement('div');
+        Object.assign(overlay.style, {
+            position: 'fixed',
+            top: '0',
+            left: '0',
+            width: '100%',
+            height: '100%',
+            backgroundColor: '#111827', // Dark background
+            zIndex: '2147483647', // Max z-index
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'column',
+            color: 'white',
+            fontFamily: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif'
         });
+
+        overlay.innerHTML = `
+            <div style="background: #1f2937; padding: 2rem; border-radius: 1rem; text-align: center; border: 1px solid #374151; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);">
+                <svg style="width: 4rem; height: 4rem; color: #ef4444; margin: 0 auto 1rem auto;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+                </svg>
+                <h2 style="font-size: 1.5rem; font-weight: 700; margin-bottom: 0.5rem; color: white;">Access Denied</h2>
+                <p style="color: #9ca3af; margin-bottom: 1rem;">You cannot access this page. Insufficient rights.</p>
+                <div style="width: 100%; height: 4px; background: #374151; border-radius: 2px; overflow: hidden;">
+                    <div id="redirect-progress" style="width: 100%; height: 100%; background: #ef4444; transition: width 3s linear;"></div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(overlay);
+
+        // Remove loading overlay immediately to show access denied
+        const loading = document.getElementById('auth-loading-overlay');
+        if (loading) loading.remove();
+        
+        document.body.style.opacity = '1';
+        document.body.style.pointerEvents = 'auto';
+
+        // Animate bar
+        setTimeout(() => {
+            const bar = document.getElementById('redirect-progress');
+            if (bar) bar.style.width = '0%';
+        }, 100);
+
+        // Redirect after 3 seconds
+        setTimeout(() => {
+            window.location.replace('main.html');
+        }, 3000);
+    }
+
+    revealContent() {
+        const loading = document.getElementById('auth-loading-overlay');
+        if (loading) {
+            loading.style.opacity = '0';
+            setTimeout(() => {
+                loading.remove();
+                document.body.style.overflow = ''; // Restore scrolling
+            }, 500);
+        }
+    }
+
+    syncNavigation(permissions) {
+      const navLinks = document.querySelectorAll('.nav-link, a[href]');
+      navLinks.forEach(link => {
+        const href = link.getAttribute('href');
+        if (!href || href === '#' || href.startsWith('javascript:')) return;
+        
+        const targetPage = href.split('/').pop();
+        const targetKey = this.getPageKey(targetPage);
+        const targetPerm = permissions[targetKey];
+
+        if (targetPerm === 'none' && targetKey !== 'main' && targetKey !== 'index') {
+          link.style.display = 'none';
+        }
       });
     }
 
     setupViewOnlyMode() {
-      setTimeout(() => {
-        const inputs = document.querySelectorAll('input, textarea, select, button[type="submit"]');
-        inputs.forEach(input => {
-          // Skip search/filter elements and auth controls
-          if (
-            !input.closest('#auth-controls') &&
-            !input.onclick?.toString().includes('logout') &&
-            input.id !== 'searchInput' &&
-            input.id !== 'positionFilter' &&
-            input.id !== 'pointsFilter' &&
-            input.id !== 'clearSearch' &&
-            !input.closest('.search-container')
-          ) {
-            input.disabled = true;
-            input.style.opacity = '0.7';
-            input.style.cursor = 'not-allowed';
-            input.title = 'Read-only mode - editing disabled';
-          }
-        });
-      }, 500);
-    }
-
-    blockRestrictedNavigation() {
-      const restrictedPages = this.getRestrictedPages();
-
-      document.addEventListener('click', e => {
-        const link = e.target.closest('a');
-        if (link) {
-          const href = link.getAttribute('href');
-          if (href && restrictedPages.some(page => href.includes(page))) {
-            e.preventDefault();
-            this.showAccessDeniedPopup();
-          }
+      console.log('[AUTH-SYSTEM] 👁️ Enabling View-Only Mode');
+      const inputs = document.querySelectorAll('input, select, textarea, button[type="submit"]');
+      inputs.forEach(el => {
+        // Exempt search/filter/logout
+        if (el.id === 'searchInput' || el.id === 'clearSearch' || el.closest('#auth-controls') || (el.onclick && el.onclick.toString().includes('logout'))) {
+           return;
         }
+        el.disabled = true;
+        el.style.opacity = '0.7';
+        el.title = 'You have view-only access to this page.';
       });
-    }
 
-    showAccessDeniedPopup() {
-      const popup = document.createElement('div');
-      popup.style.cssText = `
-                position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-                background: rgba(0,0,0,0.7); z-index: 999999;
-                display: flex; align-items: center; justify-content: center;
-            `;
-
-      popup.innerHTML = `
-                <div style="background: white; padding: 30px; border-radius: 10px; text-align: center; max-width: 400px;">
-                    <h2 style="color: #dc3545; margin-bottom: 15px;">Access Restricted</h2>
-                    <p style="margin-bottom: 20px;">You don't have permission to access this section.</p>
-                    <p style="font-size: 14px; color: #666; margin-bottom: 25px;">Role: ${this.getRoleDisplayName()}</p>
-                    <button onclick="this.parentElement.parentElement.remove()" style="
-                        background: #007bff; color: white; border: none; padding: 10px 20px;
-                        border-radius: 5px; cursor: pointer;
-                    ">OK</button>
-                </div>
-            `;
-
-      document.body.appendChild(popup);
-      setTimeout(() => popup.remove(), 5000);
-    }
-
-    getRestrictedPages() {
-      const restrictions = {
-        FULL_ACCESS_EDIT: [],
-        FULL_ACCESS_VIEW: ['accounts.html'],
-        LIMITED_ACCESS_EDIT: ['accounts.html', 'central.html'],
-        LIMITED_ACCESS_VIEW: ['accounts.html', 'central.html'],
-      };
-      return restrictions[this.userRole] || [];
-    }
-
-    getRoleDisplayName() {
-      const roleNames = {
-        FULL_ACCESS_EDIT: 'Full Access & Edit',
-        FULL_ACCESS_VIEW: 'Full Access (View Only)',
-        LIMITED_ACCESS_EDIT: 'Limited Access & Edit',
-        LIMITED_ACCESS_VIEW: 'Limited Access (View Only)',
-      };
-      return roleNames[this.userRole] || this.userRole;
-    }
-
-    showAccessDenied() {
-      document.body.innerHTML = `
-                <div style="display: flex; justify-content: center; align-items: center; height: 100vh; 
-                           background: linear-gradient(135deg, #0d1b2a 0%, #1c2541 50%, #0056b3 100%); 
-                           font-family: Arial, sans-serif;">
-                    <div style="text-align: center; padding: 40px; background: rgba(255,255,255,0.95); 
-                               border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); max-width: 400px;">
-                        <div style="font-size: 48px; margin-bottom: 20px;">🚫</div>
-                        <h1 style="color: #333; margin-bottom: 15px;">Access Denied</h1>
-                        <p style="color: #666; margin-bottom: 20px;">You don't have permission to view this page.</p>
-                        <p style="color: #888; font-size: 14px; margin-bottom: 30px;">
-                            Role: <strong>${this.getRoleDisplayName()}</strong><br>
-                            Page: <strong>${this.currentPage}</strong>
-                        </p>
-                        <div>
-                            <button onclick="window.location.href='dashboard.html'" style="
-                                background: #007bff; color: white; border: none; padding: 12px 24px;
-                                border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;
-                            ">Go to Dashboard</button>
-                            <button onclick="this.handleLogout()" style="
-                                background: #dc3545; color: white; border: none; padding: 12px 24px;
-                                border-radius: 6px; cursor: pointer; margin: 5px; font-size: 14px;
-                            ">Logout</button>
-                        </div>
-                    </div>
-                </div>
-                <script>
-                    function handleLogout() {
-                        if (window.firebaseAuth) {
-                            window.firebaseAuth.signOut().then(() => {
-                                window.location.href = 'index.html';
-                            });
-                        } else {
-                            window.location.href = 'index.html';
-                        }
-                    }
-                </script>
-            `;
-    }
-
-    redirectToLogin() {
-      console.log('[AUTH-SYSTEM] Redirecting to login');
-      if (window.firebaseAuth && window.firebaseAuth.currentUser) {
-        window.firebaseAuth.signOut().catch(() => {});
-      }
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 100);
+      // Special handling for tables (hiding "More" or "Action" buttons)
+      const actionButtons = document.querySelectorAll(
+         '.action-btn, .edit-btn, .delete-btn, button[onclick*="edit"], button[onclick*="delete"], .fa-edit, .fa-trash, .fa-ellipsis-v'
+      );
+      actionButtons.forEach(btn => {
+         // Check if it's inside a navigation or harmless area
+         if (btn.closest('nav') || btn.closest('#auth-controls')) return;
+         btn.style.display = 'none';
+      });
+      
+      // Also disable any elements with 'data-edit-only' attribute
+      const editOnlyElements = document.querySelectorAll('[data-edit-only="true"]');
+      editOnlyElements.forEach(el => el.style.display = 'none');
     }
   }
 
-  // Initialize the auth system
-  const currentPage = window.location.pathname.split('/').pop() || 'index.html';
-
-  if (currentPage === 'index.html') {
-    console.log('[AUTH-SYSTEM] On login page, skipping auth');
-  } else {
-    console.log('[AUTH-SYSTEM] Initializing auth for:', currentPage);
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => {
-        window.authSystem = new AdvancedAuthSystem();
-      });
-    } else {
-      window.authSystem = new AdvancedAuthSystem();
-    }
+  // Initialize
+  if (window.authSystem) {
+    console.log('[AUTH-SYSTEM] Already initialized.');
+    return;
   }
+  window.authSystem = new AdvancedAuthSystem();
 })();

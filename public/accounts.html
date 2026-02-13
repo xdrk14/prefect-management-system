@@ -11,7 +11,7 @@
     <!-- Security Headers -->
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.tailwindcss.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleapis.com https://*.google.com; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net https://api.ipify.org wss://*.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.tailwindcss.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleapis.com https://*.google.com; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net https://api.ipify.org wss://*.googleapis.com https://www.gstatic.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
     />
     <meta http-equiv="X-Content-Type-Options" content="nosniff" />
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
@@ -19,6 +19,16 @@
     <!-- External CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../styles/stylesheet.css" />
+
+    <!-- External Auth & Security -->
+    <script src="auth/security-protection.js"></script>
+    <script src="auth/firebase-config.js"></script>
+    <script src="auth/auth-manager.js"></script>
+    <script src="auth/script-manager.js"></script>
+    <script src="auth/auth-system.js"></script>
+
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../styles/custom-icons.css" />
 
     <!-- Custom Styles -->
     <style>
@@ -146,16 +156,13 @@
 
       .modal-content {
         background: white;
-        border-radius: 0.5rem;
-        max-width: 28rem;
+        border-radius: 0.75rem;
         width: 100%;
+        max-width: 42rem; /* Much larger (was 28rem) */
+        margin: 1rem;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         max-height: 90vh;
         overflow-y: auto;
-        position: relative;
-        margin: auto;
-        box-shadow:
-          0 20px 25px -5px rgba(0, 0, 0, 0.1),
-          0 10px 10px -5px rgba(0, 0, 0, 0.04);
       }
 
       .modal-header {
@@ -222,7 +229,17 @@
         }
       }
     </style>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
     <script src="scripts/logoutbtn.js"></script>
+    <script src="scripts/accounts-manager.js"></script>
+    <script src="scripts/accounts-ui.js"></script>
+    <script src="scripts/accounts-audit.js"></script>
+    <script src="scripts/accounts-auth.js"></script>
+    <script src="scripts/audit-log-manager.js"></script>
   </head>
 
   <body class="bg-gray-50 min-h-screen">
@@ -315,11 +332,9 @@
           <div class="text-center mb-8">
             <h1 class="text-4xl font-bold text-gray-800 mb-2">Account Management</h1>
             <p class="text-gray-600">
-              Manage user accounts and permissions with Firebase integration
+              Manage user accounts and permissions 
             </p>
-            <div class="mt-3">
-              <span class="firebase-badge"> 🔥 Firebase Connected • Real-time sync enabled </span>
-            </div>
+            
           </div>
 
           <!-- Quick Stats -->
@@ -944,23 +959,7 @@
                 </p>
               </div>
 
-              <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1"
-                  >Role & Access Level</label
-                >
-                <select
-                  id="userRole"
-                  name="role"
-                  required
-                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">Select a role</option>
-                  <option value="FULL_ACCESS_EDIT">👑 Full Access + Edit (Administrator)</option>
-                  <option value="FULL_ACCESS_VIEW">📊 Full Access (Read Only)</option>
-                  <option value="LIMITED_ACCESS_EDIT">🔧 Limited Access + Edit</option>
-                  <option value="LIMITED_ACCESS_VIEW">👁️ Limited Access (Read Only)</option>
-                </select>
-              </div>
+              <!-- Role Selection Removed [User Request] -->
 
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
@@ -969,22 +968,56 @@
                   name="status"
                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 >
-                  <option value="active">✅ Active</option>
-                  <option value="pending">⏳ Pending</option>
-                  <option value="disabled">❌ Disabled</option>
+                  <option value="active">Active</option>
+                  <option value="pending">Pending</option>
+                  <option value="disabled">Disabled</option>
                 </select>
               </div>
 
-              <div class="bg-gray-50 p-4 rounded-lg border">
-                <p class="text-sm font-medium text-gray-700 mb-2">Permissions Preview:</p>
-                <div class="space-y-1 text-xs text-gray-600" id="permissionDisplay">
-                  <div class="text-gray-500">Select a role to see permissions</div>
+              <div class="bg-gray-50 rounded-lg border overflow-hidden">
+                <div class="bg-gray-100 px-4 py-2 border-b flex justify-between items-center">
+                  <p class="text-sm font-semibold text-gray-700">Granular Permissions</p>
+                  <span class="text-[10px] uppercase font-bold text-gray-400">Manage per-page access</span>
+                </div>
+                <div class="overflow-x-auto">
+                  <table class="w-full text-sm text-left">
+                    <thead class="text-xs text-gray-500 bg-gray-50 uppercase">
+                      <tr>
+                        <th class="px-4 py-2 font-medium">Page Section</th>
+                        <th class="px-2 py-2 text-center">None</th>
+                        <th class="px-2 py-2 text-center">View</th>
+                        <th class="px-2 py-2 text-center">Edit</th>
+                      </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200" id="permissionsTableBody">
+                      <!-- Page permissions will be injected here -->
+                      <tr class="hover:bg-blue-50/50 transition-colors">
+                        <td class="px-4 py-3 font-medium text-gray-700">Dashboard</td>
+                        <td class="px-2 py-3 text-center">
+                          <input type="radio" name="perm_dashboard" value="none" class="form-radio text-red-500 focus:ring-red-500">
+                        </td>
+                        <td class="px-2 py-3 text-center">
+                          <input type="radio" name="perm_dashboard" value="view" class="form-radio text-blue-500 focus:ring-blue-500">
+                        </td>
+                        <td class="px-2 py-3 text-center">
+                          <input type="radio" name="perm_dashboard" value="edit" class="form-radio text-green-500 focus:ring-green-500" checked>
+                        </td>
+                      </tr>
+                      <!-- Add Ursas, Cygnus, Aquila, Cetus, Central, Events, Accounts -->
+                    </tbody>
+                  </table>
+                </div>
+                <div class="p-4 bg-blue-50 border-t">
+                  <p class="text-[10px] text-blue-700 leading-tight">
+                    <span class="font-bold">Note:</span> "Edit" includes View access. Users with "None" for a page will not see it in their navigation menu.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
           <div class="modal-footer">
+            <button type="button" id="deleteUserBtn" class="bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 px-4 py-2 rounded-lg hidden mr-auto transition-colors font-medium">Delete Permanently</button>
             <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
             <button type="submit" class="btn-primary" id="submitButton">
               <span id="submitButtonText">Create User</span>
@@ -996,24 +1029,15 @@
 
     <!-- Footer -->
     <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
-      <div class="container mx-auto px-6 flex justify-center">
-        <p class="text-sm text-center">
-          &copy; 2025 Prefect Management System. All rights reserved.
-        </p>
-      </div>
-    </footer>
+  <div class="container mx-auto px-6 flex justify-center">
+    <p class="text-sm text-center">
+      &copy; <span id="currentYear"></span> Prefect Management System. All rights reserved.
+    </p>
+  </div>
+</footer>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 
-    <!-- External Scripts -->
-    <script src="auth/firebase-config.js"></script>
-    <script src="scripts/accounts-manager.js"></script>
-    <script src="scripts/accounts-ui.js"></script>
-    <script src="scripts/accounts-audit.js"></script>
-    <script src="scripts/accounts-auth.js"></script>
-    <script src="scripts/audit-log-manager.js"></script>
+
+
   </body>
 </html>

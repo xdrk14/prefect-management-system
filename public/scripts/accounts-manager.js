@@ -55,7 +55,8 @@
     }
 
     setupRealtimeListener() {
-      window.firebaseDb.collection('userRoles').onSnapshot(
+      if (this.unsubscribeUsers) this.unsubscribeUsers();
+      this.unsubscribeUsers = window.firebaseDb.collection('userRoles').onSnapshot(
         snapshot => {
           console.log('[ACCOUNTS-MANAGER] Real-time update received');
           this.handleRealtimeUpdate(snapshot);
@@ -160,7 +161,8 @@
       const currentAdminEmail = currentAdmin?.email;
 
       try {
-        const { email, password, name, role, status } = userData;
+        const email = userData.email.toLowerCase();
+        const { password, name, role, status, permissions } = userData;
 
         // Validate input
         if (!this.validateUserData(userData)) {
@@ -231,7 +233,9 @@
         // STEP 2: Create Firestore user profile (using main app, admin still signed in)
         const userRoleData = {
           name: name,
-          role: role,
+          // If granular permissions are used, set role to LIMITED_ACCESS_EDIT to prevent full access confusion
+          role: permissions ? 'LIMITED_ACCESS_EDIT' : role,
+          permissions: permissions || this.migrateLegacyRole(role),
           active: status === 'active',
           status: status,
           firebaseUid: firebaseUser.uid,
@@ -345,6 +349,7 @@
 
     // Update existing user
     async updateUser(email, updates) {
+      const normalizedEmail = email.toLowerCase();
       if (this.isLoading) return { success: false, error: 'Operation in progress' };
 
       this.isLoading = true;
@@ -352,7 +357,7 @@
 
       try {
         // Get current user data
-        const userDoc = await window.firebaseDb.collection('userRoles').doc(email).get();
+        const userDoc = await window.firebaseDb.collection('userRoles').doc(normalizedEmail).get();
         if (!userDoc.exists) {
           throw new Error('User not found');
         }
@@ -364,13 +369,20 @@
           updatedBy: this.currentUserData?.email || 'system',
         };
 
+        // If role is updated but permissions aren't explicitly provided, migrate them
+        if (updates.role && !updates.permissions) {
+            updateData.permissions = this.migrateLegacyRole(updates.role);
+        }
+        // [FIX] Do NOT forcefully overwrite role if permissions are present. 
+        // We trust the 'role' field passed in 'updates' (which comes from the UI selection).
+
         // Update in Firebase
-        await window.firebaseDb.collection('userRoles').doc(email).update(updateData);
+        await window.firebaseDb.collection('userRoles').doc(normalizedEmail).update(updateData);
 
         // Log the action
         await this.logAuditAction(
           'UPDATE',
-          email,
+          normalizedEmail,
           currentData,
           { ...currentData, ...updateData },
           `Updated user account: ${Object.keys(updates).join(', ')}`
@@ -389,6 +401,7 @@
 
     // Delete user (soft delete - deactivate)
     async deleteUser(email) {
+      const normalizedEmail = email.toLowerCase();
       if (this.isLoading) return { success: false, error: 'Operation in progress' };
 
       // Prevent self-deletion
@@ -402,7 +415,7 @@
 
       try {
         // Get current user data
-        const userDoc = await window.firebaseDb.collection('userRoles').doc(email).get();
+        const userDoc = await window.firebaseDb.collection('userRoles').doc(normalizedEmail).get();
         if (!userDoc.exists) {
           throw new Error('User not found');
         }
@@ -418,12 +431,12 @@
         };
 
         // Update in Firebase (soft delete)
-        await window.firebaseDb.collection('userRoles').doc(email).update(updateData);
+        await window.firebaseDb.collection('userRoles').doc(normalizedEmail).update(updateData);
 
         // Log the action
         await this.logAuditAction(
           'DELETE',
-          email,
+          normalizedEmail,
           currentData,
           { ...currentData, ...updateData },
           `Deactivated user account`
@@ -442,13 +455,14 @@
 
     // Reactivate user
     async reactivateUser(email) {
+      const normalizedEmail = email.toLowerCase();
       if (this.isLoading) return { success: false, error: 'Operation in progress' };
 
       this.isLoading = true;
       this.showToast('Reactivating user account...', 'info');
 
       try {
-        const userDoc = await window.firebaseDb.collection('userRoles').doc(email).get();
+        const userDoc = await window.firebaseDb.collection('userRoles').doc(normalizedEmail).get();
         if (!userDoc.exists) {
           throw new Error('User not found');
         }
@@ -464,12 +478,12 @@
         };
 
         // Update in Firebase
-        await window.firebaseDb.collection('userRoles').doc(email).update(updateData);
+        await window.firebaseDb.collection('userRoles').doc(normalizedEmail).update(updateData);
 
         // Log the action
         await this.logAuditAction(
           'REACTIVATE',
-          email,
+          normalizedEmail,
           currentData,
           { ...currentData, ...updateData },
           `Reactivated user account`
@@ -480,6 +494,54 @@
       } catch (error) {
         console.error('[ACCOUNTS-MANAGER] Reactivate user error:', error);
         this.showToast(`Failed to reactivate user: ${error.message}`, 'error');
+        return { success: false, error: error.message };
+      } finally {
+        this.isLoading = false;
+      }
+    }
+
+    // Permanently Delete User (Hard Delete)
+    async permanentlyDeleteUser(email) {
+      const normalizedEmail = email.toLowerCase();
+      if (this.isLoading) return { success: false, error: 'Operation in progress' };
+
+      // Prevent self-deletion
+      if (email === this.currentUserData?.email) {
+        this.showToast('You cannot delete your own account', 'error');
+        return { success: false, error: 'Cannot delete own account' };
+      }
+
+      this.isLoading = true;
+      this.showToast('Permanently deleting user...', 'warning');
+
+      try {
+        const userDoc = await window.firebaseDb.collection('userRoles').doc(normalizedEmail).get();
+        if (!userDoc.exists) {
+          throw new Error('User not found');
+        }
+        const currentData = userDoc.data();
+
+        // Hard Delete from Firestore
+        await window.firebaseDb.collection('userRoles').doc(normalizedEmail).delete();
+
+        // Attempt to clean up Auth (Note: This usually requires backend, but we'll try)
+        // Since we can't easily delete from Auth client-side without credentials, we rely on Firestore deletion.
+        // The Auth record will remain "orphaned" but useless without a Firestore profile.
+
+        // Log the action (Audit log persists even if user is gone)
+        await this.logAuditAction(
+          'PERMANENT_DELETE',
+          normalizedEmail,
+          currentData,
+          null,
+          `Permanently deleted user account`
+        );
+
+        this.showToast(`User account permanently deleted.`, 'success');
+        return { success: true };
+      } catch (error) {
+        console.error('[ACCOUNTS-MANAGER] Permanent delete error:', error);
+        this.showToast(`Failed to delete user: ${error.message}`, 'error');
         return { success: false, error: error.message };
       } finally {
         this.isLoading = false;
@@ -626,6 +688,7 @@
             const userData = {
               name: user.name,
               role: user.role,
+              permissions: this.migrateLegacyRole(user.role),
               department: user.department,
               active: true,
               status: 'active',
@@ -736,7 +799,7 @@
 
     // Validation helpers
     validateUserData(userData) {
-      const { email, name, role, password } = userData;
+      const { email, name, role, password, permissions } = userData;
 
       if (!email || !email.includes('@')) {
         this.showToast('Please provide a valid email address', 'error');
@@ -753,18 +816,44 @@
         return false;
       }
 
-      const validRoles = [
-        'FULL_ACCESS_EDIT',
-        'FULL_ACCESS_VIEW',
-        'LIMITED_ACCESS_EDIT',
-        'LIMITED_ACCESS_VIEW',
-      ];
-      if (!validRoles.includes(role)) {
-        this.showToast('Please select a valid role', 'error');
-        return false;
+      // [OVERHAUL] Permission validation
+      // Role is now optional/deprecated in favor of granular permissions
+      // We no longer validate 'role' against the legacy list if it's not provided.
+      
+      if (permissions) {
+          const validLevels = ['none', 'view', 'edit'];
+          const requiredKeys = ['dashboard', 'central', 'events', 'accounts'];
+          for (const key of requiredKeys) {
+              if (!validLevels.includes(permissions[key])) {
+                  this.showToast(`Invalid permission level for ${key}`, 'error');
+                  return false;
+              }
+          }
       }
 
       return true;
+    }
+
+    // Migrate legacy roles for local use
+    migrateLegacyRole(role) {
+      const perms = {
+        dashboard: 'none', central: 'none', aquila: 'none', cetus: 'none', 
+        cygnus: 'none', ursa: 'none', events: 'none', accounts: 'none'
+      };
+
+      if (!role) return perms; // Return all 'none' if no role
+
+      if (role === 'FULL_ACCESS_EDIT') {
+        Object.keys(perms).forEach(k => perms[k] = 'edit');
+      } else if (role === 'FULL_ACCESS_VIEW') {
+        Object.keys(perms).forEach(k => perms[k] = 'view');
+      } else if (role === 'LIMITED_ACCESS_EDIT') {
+        ['dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'edit');
+      } else if (role === 'LIMITED_ACCESS_VIEW') {
+        ['dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'view');
+      }
+
+      return perms;
     }
 
     // Get user by email
@@ -1095,5 +1184,9 @@
   }
 
   // Initialize and expose globally
+  if (window.accountsManager) {
+    console.log('[ACCOUNTS-MANAGER] Already initialized.');
+    return;
+  }
   window.accountsManager = new AccountsManager();
 })();

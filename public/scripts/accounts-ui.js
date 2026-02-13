@@ -63,12 +63,59 @@
         addUserBtn: () => this.openCreateModal(),
         closeModalBtn: () => this.closeModal(),
         cancelBtn: () => this.closeModal(),
+        deleteUserBtn: () => {
+             if (this.currentEditingUser) this.performHardDelete(this.currentEditingUser.email);
+        },
       };
 
       Object.entries(buttons).forEach(([id, handler]) => {
         const element = document.getElementById(id);
         if (element) element.addEventListener('click', handler);
       });
+    }
+
+    // ... (keep form events same)
+
+    // ...
+
+    async initializeSampleAccounts() {
+      await this.showConfirmationModal({
+          title: 'Initialize Sample Accounts?',
+          message: 'This will create 8 sample user accounts for testing purposes.\n\n(Existing accounts with the same email will be skipped).',
+          confirmText: 'Create Accounts',
+          confirmColor: 'blue',
+          iconStr: `<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>`,
+          onConfirm: async () => {
+              const result = await window.accountsManager?.initializeSampleAccounts();
+              if (result?.success) setTimeout(() => this.refreshData(), 1000);
+          }
+      });
+    }
+
+    // ...
+
+    setModalContent(title, submitText, isEdit) {
+      const modalTitle = document.getElementById('modalTitle');
+      const submitButtonText = document.getElementById('submitButtonText');
+      const passwordField = document.getElementById('passwordField');
+      const passwordInput = document.getElementById('userPassword');
+      const emailInput = document.getElementById('userEmail');
+      const deleteBtn = document.getElementById('deleteUserBtn');
+
+      if (modalTitle) modalTitle.textContent = title;
+      if (submitButtonText) submitButtonText.textContent = submitText;
+      if (passwordField) passwordField.style.display = isEdit ? 'none' : 'block';
+      if (passwordInput) passwordInput.required = !isEdit;
+      if (emailInput) emailInput.readOnly = isEdit;
+      
+      // Update Delete Button visibility
+      if (deleteBtn) {
+          if (isEdit) {
+              deleteBtn.classList.remove('hidden');
+          } else {
+              deleteBtn.classList.add('hidden');
+          }
+      }
     }
 
     bindFormEvents() {
@@ -78,10 +125,7 @@
         console.log('[ACCOUNTS-UI] [SUCCESS] Form submit handler bound');
       }
 
-      const userRole = document.getElementById('userRole');
-      if (userRole) {
-        userRole.addEventListener('change', () => this.updatePermissionDisplay());
-      }
+      // Role listener removed
     }
 
     bindFilterEvents() {
@@ -138,224 +182,177 @@
     // AUTHENTICATION & UTILITIES
     // ========================================
 
-    async handleLogout() {
-      this.showLogoutModal();
-    }
+    // ========================================
+    // CONFIRMATION MODALS (Generic)
+    // ========================================
 
-    showLogoutModal() {
-      // Remove existing modal if present
-      const existingModal = document.getElementById('logoutModal');
-      if (existingModal) {
-        existingModal.remove();
-      }
+    async showConfirmationModal({ title, message, iconStr, confirmText, confirmColor, onConfirm }) {
+      // Remove existing
+      const existing = document.getElementById('confirmationModal');
+      if (existing) existing.remove();
 
-      // Create modal HTML
+      const colorClass = confirmColor || 'red';
+      const icon = iconStr || `
+        <svg class="w-6 h-6 text-${colorClass}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
+        </svg>
+      `;
+
       const modalHTML = `
-                <div id="logoutModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 opacity-0 transition-all duration-300">
-                    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 transform scale-95 transition-all duration-300">
-                        <!-- Modal Header -->
-                        <div class="bg-gradient-to-r from-red-500 to-red-600 text-white p-6 rounded-t-2xl">
-                            <div class="flex items-center">
-                                <div class="bg-white bg-opacity-20 rounded-full p-2 mr-3">
-                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <h3 class="text-xl font-bold">Confirm Logout</h3>
-                                    <p class="text-red-100 text-sm">Are you sure you want to sign out?</p>
-                                </div>
-                            </div>
+        <div id="confirmationModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[60] opacity-0 transition-opacity duration-300 px-4">
+            <div class="bg-white rounded-2xl shadow-2xl max-w-xl w-full transform scale-95 transition-transform duration-300">
+                <div class="p-6">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0 bg-${colorClass}-100 rounded-full p-2 mr-3">
+                            ${icon}
                         </div>
-
-                        <!-- Modal Body -->
-                        <div class="p-6">
-                            <div class="flex items-start mb-4">
-                                <div class="bg-red-100 rounded-full p-2 mr-3">
-                                    <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                                    </svg>
-                                </div>
-                                <div>
-                                    <p class="text-gray-700 mb-2">You will be signed out of your account and redirected to the login page.</p>
-                                    <p class="text-sm text-gray-500">Any unsaved changes will be lost.</p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Modal Footer -->
-                        <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
-                            <button id="cancelLogoutBtn" class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors duration-200 font-medium">
-                                Cancel
-                            </button>
-                            <button id="confirmLogoutBtn" class="px-6 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg hover:from-red-600 hover:to-red-700 transition-all duration-200 font-medium shadow-lg">
-                                <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-                                </svg>
-                                Sign Out
-                            </button>
+                        <div>
+                            <h3 class="text-xl font-bold text-gray-900 mb-2">${title}</h3>
+                            <div class="text-gray-600 text-sm whitespace-pre-line">${message}</div>
                         </div>
                     </div>
                 </div>
-            `;
+                <div class="bg-gray-50 px-6 py-4 rounded-b-2xl flex justify-end space-x-3">
+                    <button id="confirmCancelBtn" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 font-medium">
+                        Cancel
+                    </button>
+                    <button id="confirmActionBtn" class="px-4 py-2 bg-${colorClass}-600 text-white rounded-lg hover:bg-${colorClass}-700 font-medium shadow-md flex items-center">
+                        ${confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>
+      `;
 
-      // Add modal to page
       document.body.insertAdjacentHTML('beforeend', modalHTML);
 
-      // Show modal with animation
-      const modal = document.getElementById('logoutModal');
-      const modalContent = modal.querySelector('.bg-white');
+      const modal = document.getElementById('confirmationModal');
+      const confirmBtn = document.getElementById('confirmActionBtn');
+      const cancelBtn = document.getElementById('confirmCancelBtn');
 
-      // Bind events
-      const cancelBtn = document.getElementById('cancelLogoutBtn');
-      const confirmBtn = document.getElementById('confirmLogoutBtn');
-
-      cancelBtn.addEventListener('click', () => this.cancelLogout());
-      confirmBtn.addEventListener('click', () => this.confirmLogout());
-
-      // Trigger animations
-      setTimeout(() => {
-        modal.classList.remove('opacity-0');
-        modal.classList.add('opacity-100');
-        modalContent.classList.remove('scale-95');
-        modalContent.classList.add('scale-100');
-      }, 10);
-
-      // Close modal on background click
-      modal.addEventListener('click', e => {
-        if (e.target === modal) {
-          this.cancelLogout();
-        }
+      // Animation in
+      requestAnimationFrame(() => {
+          modal.classList.remove('opacity-0');
+          modal.querySelector('.transform').classList.remove('scale-95');
+          modal.querySelector('.transform').classList.add('scale-100');
       });
 
-      // Close modal on Escape key
-      const escapeHandler = e => {
-        if (e.key === 'Escape') {
-          this.cancelLogout();
-          document.removeEventListener('keydown', escapeHandler);
-        }
+      const close = () => {
+          modal.classList.add('opacity-0');
+          modal.querySelector('.transform').classList.remove('scale-100');
+          modal.querySelector('.transform').classList.add('scale-95');
+          setTimeout(() => modal.remove(), 300);
       };
-      document.addEventListener('keydown', escapeHandler);
+
+      return new Promise((resolve) => {
+          confirmBtn.onclick = async () => {
+              // Loading state
+              confirmBtn.innerHTML = `
+                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                Processing...
+              `;
+              confirmBtn.disabled = true;
+              cancelBtn.disabled = true;
+              
+              if (onConfirm) await onConfirm();
+              close();
+              resolve(true);
+          };
+          cancelBtn.onclick = () => {
+              close();
+              resolve(false);
+          };
+      });
     }
 
-    cancelLogout() {
-      const modal = document.getElementById('logoutModal');
-      if (modal) {
-        const modalContent = modal.querySelector('.bg-white');
-
-        // Animate out
-        modal.classList.remove('opacity-100');
-        modal.classList.add('opacity-0');
-        modalContent.classList.remove('scale-100');
-        modalContent.classList.add('scale-95');
-
-        // Remove modal after animation
-        setTimeout(() => {
-          modal.remove();
-        }, 300);
-      }
+    // Reuse customized logic for specific actions
+    async handleLogout() {
+        this.showConfirmationModal({
+            title: 'Confirm Logout',
+            message: 'Are you sure you want to sign out? Any unsaved changes will be lost.',
+            confirmText: 'Sign Out',
+            confirmColor: 'red',
+            iconStr: `
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>`,
+            onConfirm: async () => {
+                // Perform Logout Logic
+                if (window.firebaseAuth) await window.firebaseAuth.signOut();
+                localStorage.clear();
+                sessionStorage.clear();
+                window.location.href = 'index.html';
+            }
+        });
     }
 
-    async confirmLogout() {
-      const modal = document.getElementById('logoutModal');
-      const confirmButton = document.getElementById('confirmLogoutBtn');
-      const cancelButton = document.getElementById('cancelLogoutBtn');
-
-      // Show loading state
-      confirmButton.innerHTML = `
-                <svg class="animate-spin w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" stroke-opacity="0.25"></circle>
-                    <path fill="currentColor" stroke-opacity="0.75" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Signing Out...
-            `;
-      confirmButton.disabled = true;
-      cancelButton.disabled = true;
-
-      console.log('[LOAD] Starting logout process...');
-
-      try {
-        // 1. Sign out from Firebase Authentication
-        if (window.firebaseAuth) {
-          console.log('[FIRE] Signing out from Firebase...');
-          await window.firebaseAuth.signOut();
-          console.log('[SUCCESS] Firebase signout successful');
-        } else {
-          console.log('[WARNING] Firebase Auth not available');
-        }
-
-        // 2. Clear all stored data
-        console.log('[CLEAN] Clearing stored data...');
-        try {
-          localStorage.clear();
-          sessionStorage.clear();
-
-          // Clear any cookies related to Firebase
-          document.cookie.split(';').forEach(function (c) {
-            document.cookie = c
-              .replace(/^ +/, '')
-              .replace(/=.*/, '=;expires=' + new Date().toUTCString() + ';path=/');
-          });
-
-          console.log('[SUCCESS] Storage and cookies cleared');
-        } catch (error) {
-          console.log('[WARNING] Storage clear failed:', error);
-        }
-
-        // 3. Clear auth system state
-        if (window.authSystem) {
-          window.authSystem.currentUser = null;
-          window.authSystem.userRole = null;
-          window.authSystem.authCheckCompleted = false;
-          console.log('[SUCCESS] Auth system state cleared');
-        }
-
-        // 4. Clear auth manager state
-        if (window.authManager) {
-          window.authManager.currentUser = null;
-          window.authManager.userRole = null;
-          console.log('[SUCCESS] Auth manager state cleared');
-        }
-
-        // 5. Show success message briefly, then redirect
-        setTimeout(() => {
-          confirmButton.innerHTML = `
-                        <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                        </svg>
-                        Success!
-                    `;
-          confirmButton.classList.remove(
-            'from-red-500',
-            'to-red-600',
-            'hover:from-red-600',
-            'hover:to-red-700'
-          );
-          confirmButton.classList.add('from-green-500', 'to-green-600');
-
-          // 6. Redirect to login page after brief delay
-          setTimeout(() => {
-            console.log('[LAUNCH] Redirecting to login page...');
-            window.location.href = 'index.html';
-          }, 800);
-        }, 1000);
-      } catch (error) {
-        console.error('❌ Logout error:', error);
-
-        // Show error message
-        confirmButton.innerHTML = `
-                    <svg class="w-4 h-4 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                    </svg>
-                    Error - Retrying...
-                `;
-
-        // Force redirect even if there's an error
-        setTimeout(() => {
-          window.location.href = 'index.html';
-        }, 2000);
-      }
+    // [User Request] Restored Deactivation/Reactivation toggle
+    async deleteUser(email) {
+        return this.performDeactivation(email);
     }
+
+    async reactivateUser(email) {
+        return this.performReactivation(email);
+    }
+
+    async performDeactivation(email) {
+        const user = window.accountsManager?.getUserByEmail(email);
+        if (!user) return;
+
+        await this.showConfirmationModal({
+            title: `Deactivate ${user.name}?`,
+            message: `This will suspend the user's access to the system.\n\nThey will not be able to log in until reactivated, but their account data will be preserved.`,
+            confirmText: 'Deactivate User',
+            confirmColor: 'orange',
+            iconStr: `<svg class="w-6 h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>`,
+            onConfirm: async () => {
+                const result = await window.accountsManager?.deleteUser(email); // Manager's deleteUser is actually deactivation
+                if (result?.success) setTimeout(() => this.refreshData(), 500);
+            }
+        });
+    }
+
+    async performReactivation(email) {
+        const user = window.accountsManager?.getUserByEmail(email);
+        if (!user) return;
+
+        await this.showConfirmationModal({
+            title: `Reactivate ${user.name}?`,
+            message: `This will restore the user's access to the system immediately.`,
+            confirmText: 'Reactivate User',
+            confirmColor: 'green',
+            iconStr: `<svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            onConfirm: async () => {
+                const result = await window.accountsManager?.reactivateUser(email);
+                if (result?.success) setTimeout(() => this.refreshData(), 500);
+            }
+        } );
+    }
+
+    // Hard Delete Implementation (triggered from Edit Modal usually)
+    async performHardDelete(email) {
+        const user = window.accountsManager?.getUserByEmail(email);
+        if (!user) return;
+
+        // Double confirmation for hard delete
+        await this.showConfirmationModal({
+            title: `PERMANENTLY Delete ${user.name}?`,
+            message: `⚠️ <b>WARNING: This action cannot be undone.</b>\n\nThis will permanently remove the user profile and all associated permissions from Firestore.\n\n(Note: If the user exists in Firebase Auth, they will be orphaned effectively disabled).`,
+            confirmText: 'Delete Permanently',
+            confirmColor: 'red',
+            onConfirm: async () => {
+                const result = await window.accountsManager?.permanentlyDeleteUser(email);
+                if (result?.success) {
+                    this.closeModal(); // Close the edit modal if open
+                    setTimeout(() => this.refreshData(), 500);
+                }
+            }
+        });
+    }
+
+    // ========================================
+    // PERMISSIONS & DISPLAY
+    // ========================================
 
     testFirebaseConnection() {
       console.log('[ACCOUNTS-UI] Testing Firebase connection...');
@@ -399,13 +396,19 @@
     }
 
     async initializeSampleAccounts() {
-      const confirmed = confirm('This will create 8 sample user accounts for testing.\n\nProceed?');
-      if (confirmed) {
-        const result = await window.accountsManager?.initializeSampleAccounts();
-        if (result?.success) {
-          setTimeout(() => this.refreshData(), 1000);
+      await this.showConfirmationModal({
+        title: 'Initialize Sample Data?',
+        message: 'This will create 8 sample user accounts for testing purposes.\n\nProceeding will populate the system with administrative and standard user roles for verification.',
+        confirmText: 'Create Accounts',
+        confirmColor: 'blue',
+        iconStr: `<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"></path></svg>`,
+        onConfirm: async () => {
+          const result = await window.accountsManager?.initializeSampleAccounts();
+          if (result?.success) {
+            setTimeout(() => this.refreshData(), 1000);
+          }
         }
-      }
+      });
     }
 
     // ========================================
@@ -460,13 +463,23 @@
 
     getFormData(form) {
       const formData = new FormData(form);
-      return {
+      const data = {
         name: formData.get('name')?.trim(),
         email: formData.get('email')?.trim(),
         password: formData.get('password'),
         role: formData.get('role'),
         status: formData.get('status') || 'active',
+        permissions: {}
       };
+
+      // [OVERHAUL] Collect granular permissions from radios
+      const pages = this.getPageKeys();
+      pages.forEach(page => {
+        const value = form.querySelector(`input[name="perm_${page}"]:checked`)?.value || 'none';
+        data.permissions[page] = value;
+      });
+
+      return data;
     }
 
     async createNewUser(userData) {
@@ -479,6 +492,7 @@
       const updates = {
         name: userData.name,
         role: userData.role,
+        permissions: userData.permissions, // [OVERHAUL] Include permissions
         status: userData.status,
         active: userData.status === 'active',
       };
@@ -605,27 +619,32 @@
     }
 
     createActionButton(user, isCurrentUser) {
-      if (user.active) {
-        return `
-                    <button data-action="delete" data-email="${user.email}" 
-                            class="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50 transition-colors ${isCurrentUser ? 'opacity-50 cursor-not-allowed' : ''}"
-                            title="${isCurrentUser ? 'Cannot delete your own account' : 'Deactivate user'}"
-                            ${isCurrentUser ? 'disabled' : ''}>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
-                        </svg>
-                    </button>
-                `;
+      // [User Request] Restore Deactivation/Reactivation toggle with improved icons
+      const isActive = user.active;
+      
+      if (isActive) {
+          // Show Deactivate (Shield / Ban icon)
+          return `
+                <button data-action="delete" data-email="${user.email}" 
+                        class="text-orange-600 hover:text-orange-900 p-1.5 rounded-lg hover:bg-orange-50 transition-all duration-200 ${isCurrentUser ? 'opacity-50 cursor-not-allowed' : ''}"
+                        title="${isCurrentUser ? 'Cannot modify your own account' : 'Deactivate User'}"
+                        ${isCurrentUser ? 'disabled' : ''}>
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path>
+                    </svg>
+                </button>
+            `;
       } else {
-        return `
-                    <button data-action="reactivate" data-email="${user.email}" 
-                            class="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50 transition-colors"
-                            title="Reactivate user">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                        </svg>
-                    </button>
-                `;
+          // Show Reactivate (Check icon)
+          return `
+                <button data-action="reactivate" data-email="${user.email}" 
+                        class="text-green-600 hover:text-green-900 p-1.5 rounded-lg hover:bg-green-50 transition-all duration-200"
+                        title="Reactivate User">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                </button>
+            `;
       }
     }
 
@@ -744,7 +763,7 @@
       const fields = {
         userName: user.name || '',
         userEmail: user.email || '',
-        userRole: user.role || '',
+        // userRole removed
         userStatus: user.status || (user.active ? 'active' : 'disabled'),
       };
 
@@ -752,6 +771,15 @@
         const element = document.getElementById(id);
         if (element) element.value = value;
       });
+
+      // [OVERHAUL] Populate granular permissions
+      // Fix: Merge with defaults to prevent partial/undefined permission errors
+      // Note: migrateLegacyRole now handles undefined role gracefully
+      const defaultPerms = window.accountsManager.migrateLegacyRole(user.role);
+      const savedPerms = user.permissions || {};
+      const finalPerms = { ...defaultPerms, ...savedPerms };
+      
+      this.updatePermissionDisplay(finalPerms);
     }
 
     showModal() {
@@ -762,8 +790,7 @@
     }
 
     setDefaultRole() {
-      const roleSelect = document.getElementById('userRole');
-      if (roleSelect) roleSelect.value = 'LIMITED_ACCESS_VIEW';
+      // Deprecated
     }
 
     resetFormFields() {
@@ -780,68 +807,57 @@
     // USER ACTIONS
     // ========================================
 
-    async deleteUser(email) {
-      const user = window.accountsManager?.getUserByEmail(email);
-      if (!user) {
-        this.showToast('❌ User not found', 'error');
-        return;
-      }
-
-      const isCurrentUser = email === window.accountsManager?.currentUserData?.email;
-      if (isCurrentUser) {
-        this.showToast('❌ You cannot delete your own account', 'error');
-        return;
-      }
-
-      const message = `Are you sure you want to deactivate ${user.name}?\n\nThis will:\n- Disable their access to the system\n- Keep their data for audit purposes\n- Allow reactivation later if needed`;
-
-      if (confirm(message)) {
-        const result = await window.accountsManager?.deleteUser(email);
-        if (result?.success) {
-          setTimeout(() => this.refreshData(), 500);
-        }
-      }
-    }
-
-    async reactivateUser(email) {
-      const user = window.accountsManager?.getUserByEmail(email);
-      if (!user) {
-        this.showToast('❌ User not found', 'error');
-        return;
-      }
-
-      const message = `Reactivate ${user.name}'s account?\n\nThis will restore their access to the system.`;
-
-      if (confirm(message)) {
-        const result = await window.accountsManager?.reactivateUser(email);
-        if (result?.success) {
-          setTimeout(() => this.refreshData(), 500);
-        }
-      }
-    }
 
     // ========================================
     // PERMISSIONS & DISPLAY
     // ========================================
 
-    updatePermissionDisplay() {
+    getPageKeys() {
+        return ['dashboard', 'central', 'aquila', 'cetus', 'cygnus', 'ursa', 'events', 'accounts'];
+    }
+
+    getPageDisplayName(key) {
+        const names = {
+            dashboard: 'Dashboard',
+            central: 'Central Panel',
+            aquila: 'Aquila House',
+            cetus: 'Cetus House',
+            cygnus: 'Cygnus House',
+            ursa: 'Ursa House',
+            events: 'Events Calendar',
+            accounts: 'Account Management'
+        };
+        return names[key] || key.charAt(0).toUpperCase() + key.slice(1);
+    }
+
+    updatePermissionDisplay(customPermissions = null) {
       const role = document.getElementById('userRole')?.value;
-      const permissionDiv = document.getElementById('permissionDisplay');
+      const tableBody = document.getElementById('permissionsTableBody');
 
-      if (!permissionDiv) return;
+      if (!tableBody) return;
 
-      const permissions = this.getPermissionConfig();
-      const perm = permissions[role];
+      const basePermissions = customPermissions || window.accountsManager.migrateLegacyRole(role);
+      const pages = this.getPageKeys();
 
-      if (perm) {
-        permissionDiv.innerHTML = `
-                    <div class="font-medium text-gray-800 mb-2">${perm.icon} ${perm.title}</div>
-                    ${perm.details.map(detail => `<div class="text-xs mb-1">${detail}</div>`).join('')}
-                `;
-      } else {
-        permissionDiv.innerHTML =
-          '<div class="text-gray-500">Select a role to see permissions</div>';
-      }
+      tableBody.innerHTML = pages.map(page => {
+          const currentLevel = basePermissions[page] || 'none';
+          const displayName = this.getPageDisplayName(page);
+          
+          return `
+            <tr class="hover:bg-blue-50/50 transition-colors">
+              <td class="px-4 py-3 font-medium text-gray-700">${displayName}</td>
+              <td class="px-2 py-3 text-center">
+                <input type="radio" name="perm_${page}" value="none" class="form-radio text-red-500" ${currentLevel === 'none' ? 'checked' : ''}>
+              </td>
+              <td class="px-2 py-3 text-center">
+                <input type="radio" name="perm_${page}" value="view" class="form-radio text-blue-500" ${currentLevel === 'view' ? 'checked' : ''}>
+              </td>
+              <td class="px-2 py-3 text-center">
+                <input type="radio" name="perm_${page}" value="edit" class="form-radio text-green-500" ${currentLevel === 'edit' ? 'checked' : ''}>
+              </td>
+            </tr>
+          `;
+      }).join('');
     }
 
     getPermissionConfig() {
@@ -988,7 +1004,10 @@
     }
   }
 
-  // Initialize and expose globally
+  if (window.accountsUI) {
+    console.log('[ACCOUNTS-UI] Already initialized.');
+    return;
+  }
   window.accountsUI = new AccountsUI();
 
   // Add CSS for logout modal animations

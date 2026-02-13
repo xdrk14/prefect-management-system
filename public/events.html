@@ -581,13 +581,13 @@
         <!-- Statistics Display -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold text-gray-800">📊 Event Statistics</h3>
+            <h3 class="text-lg font-semibold text-gray-800">Event Statistics</h3>
             <div class="flex gap-2">
               <button onclick="refreshStats()" class="btn btn-secondary text-sm">
-                <span id="refreshIcon">🔄</span> Refresh
+                <span id="refreshIcon"></span> Refresh
               </button>
               <button onclick="exportEventData()" class="btn btn-secondary text-sm">
-                📊 Export
+                Export
               </button>
             </div>
           </div>
@@ -599,7 +599,7 @@
         <!-- Search and Filters -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div class="search-container">
-            <div class="search-icon">🔍</div>
+            <div class="search-icon"></div>
             <input
               type="text"
               id="searchInput"
@@ -665,12 +665,12 @@
                   </div>
                 </div>
                 <div class="flex gap-3 mt-6">
-                  <button type="submit" class="btn btn-success">✅ Create Event</button>
+                  <button type="submit" class="btn btn-success">Create Event</button>
                   <button type="button" onclick="resetForm()" class="btn btn-secondary">
-                    🔄 Reset Form
+                    Reset Form
                   </button>
-                  <button type="button" onclick="toggleAddEventForm()" class="btn btn-secondary">
-                    ❌ Cancel
+                  <button type="button" onclick="toggleAddEventForm()" class="btn btn-danger">
+                    &#x2715 Cancel
                   </button>
                 </div>
               </form>
@@ -685,7 +685,7 @@
               📅 All Events
               <span id="eventsCount" class="text-sm text-gray-500 font-normal">(Loading...)</span>
             </h2>
-            <button onclick="loadAllEvents()" class="btn btn-secondary">🔄 Refresh Events</button>
+            <button onclick="loadAllEvents()" class="btn btn-secondary">Refresh Events</button>
           </div>
 
           <div id="eventsContainer">
@@ -702,7 +702,7 @@
     <div id="editEventModal" class="modal">
       <div class="modal-content">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-2xl font-semibold">✏️ Edit Event</h2>
+          <h2 class="text-2xl font-semibold">Edit Event</h2>
           <span class="close" onclick="closeEditModal()">&times;</span>
         </div>
         <div class="form-container">
@@ -742,9 +742,9 @@
               </div>
             </div>
             <div class="flex gap-3 mt-6">
-              <button type="submit" class="btn btn-success">✅ Update Event</button>
+              <button type="submit" class="btn btn-success">Update Event</button>
               <button type="button" onclick="closeEditModal()" class="btn btn-secondary">
-                ❌ Cancel
+                &#x2715 Cancel
               </button>
             </div>
           </form>
@@ -836,12 +836,12 @@
     </div>
 
     <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
-      <div class="container mx-auto px-6 flex justify-center">
-        <p class="text-sm text-center">
-          &copy; 2025 Prefect Management System. All rights reserved.
-        </p>
-      </div>
-    </footer>
+  <div class="container mx-auto px-6 flex justify-center">
+    <p class="text-sm text-center">
+      &copy; <span id="currentYear"></span> Prefect Management System. All rights reserved.
+    </p>
+  </div>
+</footer>
 
     <!-- Load required navigation scripts first -->
     <script src="scripts/navigation-utils.js"></script>
@@ -849,6 +849,6 @@
 
     <!-- Load the main events management script -->
     <script src="scripts/event-manager.js"></script>
-    <script src="/scripts/real-time-updater.js"></script>
+    <script src="scripts/real-time-updater.js"></script>
   </body>
 </html>
