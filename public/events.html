@@ -1,0 +1,854 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Events Management - Prefect Management System</title>
+    <link rel="icon" type="image/png" href="../sources/icon.png?v=1" />
+    <meta name="description" content="Manage all school events and track prefect participation" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="../styles/stylesheet.css" />
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    <script src="auth/security-protection.js"></script>
+
+    <script src="auth/firebase-config.js"></script>
+    <script src="auth/auth-manager.js"></script>
+    <script src="auth/script-manager.js"></script>
+    <script src="auth/auth-system.js"></script>
+    <!-- Add this BEFORE your other script tags -->
+    <script src="scripts/audit-log-manager.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+      /* Modal Styles */
+      .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.3s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .modal-content {
+        background-color: #fefefe;
+        margin: 2% auto;
+        padding: 25px;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 900px;
+        max-height: 90vh;
+        overflow-y: auto;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+        animation: slideIn 0.3s ease-out;
+      }
+
+      @keyframes slideIn {
+        from {
+          transform: translateY(-50px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      .close {
+        color: #aaa;
+        float: right;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+        transition: color 0.2s;
+      }
+
+      .close:hover,
+      .close:focus {
+        color: #333;
+      }
+
+      /* Event Card Styles */
+      .event-card {
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 16px;
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .event-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3b82f6, #10b981);
+      }
+
+      .event-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+      }
+
+      .event-type-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      .type-general {
+        background: linear-gradient(135deg, #dbeafe, #bfdbfe);
+        color: #1e40af;
+      }
+
+      .type-house {
+        background: linear-gradient(135deg, #dcfce7, #bbf7d0);
+        color: #166534;
+      }
+
+      /* Button Styles */
+      .btn {
+        padding: 10px 16px;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 500;
+        transition: all 0.2s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        text-decoration: none;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb, #1d4ed8);
+        transform: translateY(-1px);
+      }
+
+      .btn-success {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-1px);
+      }
+
+      .btn-warning {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+      }
+
+      .btn-warning:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+        transform: translateY(-1px);
+      }
+
+      .btn-danger {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+        padding: 8px 12px;
+        font-size: 13px;
+      }
+
+      .btn-danger:hover {
+        background: linear-gradient(135deg, #dc2626, #b91c1c);
+        transform: translateY(-1px);
+      }
+
+      .btn-secondary {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: linear-gradient(135deg, #4b5563, #374151);
+        transform: translateY(-1px);
+      }
+
+      .btn-info {
+        background: linear-gradient(135deg, #0ea5e9, #0284c7);
+        color: white;
+      }
+
+      .btn-info:hover {
+        background: linear-gradient(135deg, #0284c7, #0369a1);
+        transform: translateY(-1px);
+      }
+
+      /* Form Styles */
+      .form-container {
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        padding: 25px;
+        border-radius: 12px;
+        margin-bottom: 25px;
+        border: 1px solid #e2e8f0;
+      }
+
+      .form-group {
+        margin-bottom: 20px;
+      }
+
+      .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 600;
+        color: #374151;
+        font-size: 14px;
+      }
+
+      .form-group input,
+      .form-group select,
+      .form-group textarea {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        transition: all 0.2s;
+        background-color: white;
+      }
+
+      .form-group input:focus,
+      .form-group select:focus,
+      .form-group textarea:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      /* Search Bar */
+      .search-container {
+        margin-bottom: 25px;
+        position: relative;
+      }
+
+      #searchInput,
+      .attendance-search {
+        width: 100%;
+        padding: 15px 20px 15px 50px;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        font-size: 16px;
+        background-color: white;
+        transition: all 0.2s;
+      }
+
+      #searchInput:focus,
+      .attendance-search:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+      }
+
+      .search-icon {
+        position: absolute;
+        left: 18px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #6b7280;
+        font-size: 18px;
+      }
+
+      /* Statistics */
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+      }
+
+      .stat-card {
+        background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+        padding: 20px;
+        border-radius: 12px;
+        text-align: center;
+        border: 1px solid #e5e7eb;
+        transition: transform 0.2s;
+      }
+
+      .stat-card:hover {
+        transform: translateY(-2px);
+      }
+
+      .stat-value {
+        font-size: 24px;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 5px;
+      }
+
+      .stat-label {
+        font-size: 12px;
+        color: #6b7280;
+        font-weight: 500;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+      }
+
+      /* Attendance Styles */
+      .attendance-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        background: white;
+      }
+
+      .prefect-item {
+        padding: 12px 16px;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background-color 0.2s;
+      }
+
+      .prefect-item:hover {
+        background-color: #f9fafb;
+      }
+
+      .prefect-item:last-child {
+        border-bottom: none;
+      }
+
+      .prefect-info {
+        flex-grow: 1;
+      }
+
+      .prefect-name {
+        font-weight: 500;
+        color: #1f2937;
+      }
+
+      .prefect-details {
+        font-size: 12px;
+        color: #6b7280;
+        margin-top: 2px;
+      }
+
+      .house-badge {
+        padding: 2px 8px;
+        border-radius: 12px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        margin-right: 8px;
+      }
+
+      .house-aquila {
+        background: #fef3c7;
+        color: #92400e;
+      }
+      .house-cetus {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+      .house-cygnus {
+        background: #fce7f3;
+        color: #be185d;
+      }
+      .house-ursa {
+        background: #dcfce7;
+        color: #166534;
+      }
+      .house-central {
+        background: #f3e8ff;
+        color: #7c3aed;
+      }
+
+      /* Attendance Summary */
+      .attendance-summary {
+        background: #f8fafc;
+        padding: 16px;
+        border-radius: 8px;
+        margin-bottom: 16px;
+      }
+
+      .attendance-count {
+        font-size: 18px;
+        font-weight: 600;
+        color: #1f2937;
+      }
+
+      /* Filter Tabs */
+      .filter-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+      }
+
+      .filter-tab {
+        padding: 8px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        background: white;
+        cursor: pointer;
+        transition: all 0.2s;
+        font-size: 14px;
+        font-weight: 500;
+      }
+
+      .filter-tab.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+
+      .filter-tab:hover:not(.active) {
+        border-color: #3b82f6;
+        color: #3b82f6;
+      }
+
+      /* Loading States */
+      .loading {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid #f3f3f3;
+        border-top: 3px solid #3b82f6;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Notification Styles */
+      .notification {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        z-index: 2000;
+        transform: translateX(400px);
+        transition: transform 0.3s ease;
+      }
+
+      .notification.show {
+        transform: translateX(0);
+      }
+
+      .notification.success {
+        background: linear-gradient(135deg, #10b981, #059669);
+      }
+
+      .notification.error {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+      }
+
+      /* Empty State */
+      .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6b7280;
+      }
+
+      .empty-state-icon {
+        font-size: 48px;
+        margin-bottom: 15px;
+        opacity: 0.5;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      /* Responsive Design */
+      @media (max-width: 768px) {
+        .modal-content {
+          width: 95%;
+          margin: 5% auto;
+          padding: 20px;
+        }
+
+        .event-card {
+          padding: 15px;
+        }
+
+        .stats-grid {
+          grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+          gap: 10px;
+        }
+
+        .btn {
+          padding: 8px 12px;
+          font-size: 13px;
+        }
+      }
+    </style>
+  </head>
+
+  <body class="flex flex-col min-h-screen bg-gray-50">
+    <header class="bg-dark sticky top-0 z-50 shadow-md">
+      <div class="header-content">
+        <a href="main.html" class="logo">Prefect Management System</a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav">
+          <a href="main.html" class="nav-link">Home</a>
+          <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <a href="central.html" class="nav-link">Central</a>
+          <a href="aquila.html" class="nav-link">Aquila</a>
+          <a href="cetus.html" class="nav-link">Cetus</a>
+          <a href="cygnus.html" class="nav-link">Cygnus</a>
+          <a href="ursa.html" class="nav-link">Ursa</a>
+          <a href="events.html" class="nav-link nav-link-active">Events</a>
+          <a href="accounts.html" class="nav-link">Accounts</a>
+          <button
+            onclick="logout()"
+            class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </nav>
+
+        <!-- Hamburger Menu -->
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="nav-menu">
+        <a href="main.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="central.html" class="nav-link">Central</a>
+        <a href="aquila.html" class="nav-link">Aquila</a>
+        <a href="cetus.html" class="nav-link">Cetus</a>
+        <a href="cygnus.html" class="nav-link">Cygnus</a>
+        <a href="ursa.html" class="nav-link">Ursa</a>
+        <a href="events.html" class="nav-link nav-link-active">Events</a>
+        <a href="accounts.html" class="nav-link">Accounts</a>
+        <button
+          onclick="logout()"
+          class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </nav>
+    </header>
+
+    <main class="flex-grow container mx-auto px-4 py-8">
+      <div class="max-w-7xl mx-auto">
+        <div class="text-center mb-8">
+          <h1 class="text-4xl font-bold text-gray-800 mb-2">Event Management System</h1>
+          <p class="text-gray-600">Manage all school events and track participation</p>
+        </div>
+
+        <!-- Statistics Display -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h3 class="text-lg font-semibold text-gray-800">📊 Event Statistics</h3>
+            <div class="flex gap-2">
+              <button onclick="refreshStats()" class="btn btn-secondary text-sm">
+                <span id="refreshIcon">🔄</span> Refresh
+              </button>
+              <button onclick="exportEventData()" class="btn btn-secondary text-sm">
+                📊 Export
+              </button>
+            </div>
+          </div>
+          <div id="statsContainer" class="stats-grid">
+            <!-- Statistics will be populated here -->
+          </div>
+        </div>
+
+        <!-- Search and Filters -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div class="search-container">
+            <div class="search-icon">🔍</div>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search events by name, type, or date..."
+              onkeyup="searchEvents()"
+            />
+          </div>
+
+          <div class="filter-tabs">
+            <div class="filter-tab active" onclick="filterEvents('all')">All Events</div>
+            <div class="filter-tab" onclick="filterEvents('general')">General Events</div>
+            <div class="filter-tab" onclick="filterEvents('house')">House Events</div>
+            <div class="filter-tab" onclick="filterEvents('upcoming')">Upcoming</div>
+            <div class="filter-tab" onclick="filterEvents('past')">Past</div>
+          </div>
+        </div>
+
+        <!-- Add Event Section -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-xl font-semibold text-gray-800">➕ Add New Event</h2>
+            <button onclick="toggleAddEventForm()" class="btn btn-primary" id="toggleFormBtn">
+              Show Form
+            </button>
+          </div>
+
+          <div id="addEventForm" class="hidden">
+            <div class="form-container">
+              <form onsubmit="addNewEvent(event)" id="eventForm">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div class="form-group">
+                    <label>Event Name <span class="text-red-500">*</span></label>
+                    <input type="text" name="eventName" required placeholder="Enter event name" />
+                  </div>
+                  <div class="form-group">
+                    <label>Event Type <span class="text-red-500">*</span></label>
+                    <select name="eventType" required onchange="updateEventId()">
+                      <option value="">Select event type</option>
+                      <option value="general">General Event</option>
+                      <option value="house">House Event</option>
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label>Event Date <span class="text-red-500">*</span></label>
+                    <input type="date" name="eventDate" required />
+                  </div>
+                  <div class="form-group">
+                    <label>Event ID <span class="text-red-500">*</span></label>
+                    <input
+                      type="text"
+                      name="eventId"
+                      required
+                      placeholder="Will be auto-generated"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label>Start Time</label>
+                    <input type="time" name="startTime" />
+                  </div>
+                  <div class="form-group">
+                    <label>End Time</label>
+                    <input type="time" name="endTime" />
+                  </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                  <button type="submit" class="btn btn-success">✅ Create Event</button>
+                  <button type="button" onclick="resetForm()" class="btn btn-secondary">
+                    🔄 Reset Form
+                  </button>
+                  <button type="button" onclick="toggleAddEventForm()" class="btn btn-secondary">
+                    ❌ Cancel
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <!-- Events Display -->
+        <div class="bg-white rounded-lg shadow-sm p-6">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-semibold text-gray-800">
+              📅 All Events
+              <span id="eventsCount" class="text-sm text-gray-500 font-normal">(Loading...)</span>
+            </h2>
+            <button onclick="loadAllEvents()" class="btn btn-secondary">🔄 Refresh Events</button>
+          </div>
+
+          <div id="eventsContainer">
+            <div class="text-center py-12">
+              <div class="loading mx-auto mb-4"></div>
+              <p class="text-gray-500">Loading events...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Edit Event Modal -->
+    <div id="editEventModal" class="modal">
+      <div class="modal-content">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-semibold">✏️ Edit Event</h2>
+          <span class="close" onclick="closeEditModal()">&times;</span>
+        </div>
+        <div class="form-container">
+          <form onsubmit="updateEvent(event)" id="editEventForm">
+            <input type="hidden" name="originalEventId" />
+            <input type="hidden" name="originalEventType" />
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="form-group">
+                <label>Event Name <span class="text-red-500">*</span></label>
+                <input type="text" name="eventName" required />
+              </div>
+              <div class="form-group">
+                <label>Event Type <span class="text-red-500">*</span></label>
+                <select name="eventType" required disabled>
+                  <option value="general">General Event</option>
+                  <option value="house">House Event</option>
+                </select>
+                <small class="text-gray-500">Event type cannot be changed</small>
+              </div>
+              <div class="form-group">
+                <label>Event Date <span class="text-red-500">*</span></label>
+                <input type="date" name="eventDate" required />
+              </div>
+              <div class="form-group">
+                <label>Event ID</label>
+                <input type="text" name="eventId" readonly class="bg-gray-100" />
+                <small class="text-gray-500">Event ID cannot be changed</small>
+              </div>
+              <div class="form-group">
+                <label>Start Time</label>
+                <input type="time" name="startTime" />
+              </div>
+              <div class="form-group">
+                <label>End Time</label>
+                <input type="time" name="endTime" />
+              </div>
+            </div>
+            <div class="flex gap-3 mt-6">
+              <button type="submit" class="btn btn-success">✅ Update Event</button>
+              <button type="button" onclick="closeEditModal()" class="btn btn-secondary">
+                ❌ Cancel
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Attendance Management Modal -->
+    <div id="attendanceModal" class="modal">
+      <div class="modal-content">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-2xl font-semibold">👥 Manage Event Attendance</h2>
+          <span class="close" onclick="closeAttendanceModal()">&times;</span>
+        </div>
+
+        <div id="attendanceContent">
+          <!-- Event details will be populated here -->
+          <div class="attendance-summary mb-6">
+            <div class="flex justify-between items-center">
+              <div>
+                <h3 id="attendanceEventName" class="text-lg font-semibold">Event Name</h3>
+                <p id="attendanceEventDetails" class="text-sm text-gray-600">Event details</p>
+              </div>
+              <div class="text-right">
+                <div class="attendance-count" id="attendanceCount">0 attendees</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Search for prefects to add -->
+          <div class="mb-6">
+            <h4 class="text-md font-semibold mb-3">Add Prefects to Event</h4>
+            <div class="search-container">
+              <div class="search-icon"></div>
+              <input
+                type="text"
+                class="attendance-search"
+                id="prefectSearch"
+                placeholder="Search prefects by name, house, or position..."
+                onkeyup="searchPrefects()"
+              />
+            </div>
+
+            <div class="mt-3">
+              <select id="houseFilter" onchange="filterPrefectsByHouse()" class="form-group">
+                <option value="">All Houses</option>
+                <option value="aquila">Aquila</option>
+                <option value="cetus">Cetus</option>
+                <option value="cygnus">Cygnus</option>
+                <option value="ursa">Ursa</option>
+                <option value="central">Central</option>
+              </select>
+            </div>
+
+            <div id="prefectSearchResults" class="attendance-list mt-4 hidden">
+              <!-- Search results will appear here -->
+            </div>
+          </div>
+
+          <!-- Current attendees -->
+          <div>
+            <h4 class="text-md font-semibold mb-3">Current Attendees</h4>
+            <div id="currentAttendees" class="attendance-list">
+              <div class="text-center py-8">
+                <div class="loading mx-auto mb-4"></div>
+                <p class="text-gray-500">Loading attendees...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmModal" class="modal">
+      <div class="modal-content" style="max-width: 400px">
+        <div class="text-center">
+          <div class="text-4xl mb-4">⚠️</div>
+          <h3 class="text-xl font-semibold mb-4">Confirm Deletion</h3>
+          <p class="text-gray-600 mb-6">
+            Are you sure you want to delete this event? This action cannot be undone.
+          </p>
+          <div class="flex gap-3 justify-center">
+            <button onclick="confirmDelete()" class="btn btn-danger">🗑️ Yes, Delete</button>
+            <button onclick="closeConfirmModal()" class="btn btn-secondary">❌ Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
+      <div class="container mx-auto px-6 flex justify-center">
+        <p class="text-sm text-center">
+          &copy; 2025 Prefect Management System. All rights reserved.
+        </p>
+      </div>
+    </footer>
+
+    <!-- Load required navigation scripts first -->
+    <script src="scripts/navigation-utils.js"></script>
+    <script src="scripts/logoutbtn.js"></script>
+
+    <!-- Load the main events management script -->
+    <script src="scripts/event-manager.js"></script>
+    <script src="/scripts/real-time-updater.js"></script>
+  </body>
+</html>

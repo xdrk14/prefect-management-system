@@ -1,0 +1,1070 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/png" href="../sources/icon.png?v=1" />
+    <title>Account Management - Prefect Management System</title>
+    <meta name="description" content="Manage user accounts and permissions with Firebase" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+    <!-- Security Headers -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' https://www.gstatic.com https://cdn.tailwindcss.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleapis.com https://*.google.com; connect-src 'self' https://*.firebaseapp.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://firestore.googleapis.com https://*.cloudfunctions.net https://api.ipify.org wss://*.googleapis.com; frame-src 'none'; object-src 'none'; base-uri 'self';"
+    />
+    <meta http-equiv="X-Content-Type-Options" content="nosniff" />
+    <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin" />
+
+    <!-- External CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles/stylesheet.css" />
+
+    <!-- Custom Styles -->
+    <style>
+      .glass {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      .card-hover {
+        transition: all 0.3s ease;
+      }
+
+      .card-hover:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .role-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.625rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+      }
+
+      .role-FULL_ACCESS_EDIT {
+        background-color: #f3e8ff;
+        color: #7c3aed;
+      }
+      .role-FULL_ACCESS_VIEW {
+        background-color: #dbeafe;
+        color: #2563eb;
+      }
+      .role-LIMITED_ACCESS_EDIT {
+        background-color: #d1fae5;
+        color: #059669;
+      }
+      .role-LIMITED_ACCESS_VIEW {
+        background-color: #fef3c7;
+        color: #d97706;
+      }
+
+      .status-active {
+        background-color: #d1fae5;
+        color: #059669;
+      }
+      .status-disabled {
+        background-color: #fee2e2;
+        color: #dc2626;
+      }
+      .status-pending {
+        background-color: #fef3c7;
+        color: #d97706;
+      }
+
+      .animate-fadeIn {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .modal-overlay {
+        background: rgba(0, 0, 0, 0.5);
+        backdrop-filter: blur(4px);
+      }
+
+      .firebase-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.25rem 0.5rem;
+        border-radius: 9999px;
+        font-size: 0.75rem;
+        font-weight: 500;
+        background-color: #fed7aa;
+        color: #ea580c;
+      }
+
+      .stats-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+      }
+
+      .stats-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      .table-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+      }
+
+      .access-denied-container {
+        min-height: 60vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      /* Modal positioning and sizing */
+      .modal-container {
+        position: fixed;
+        inset: 0;
+        z-index: 50;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+        min-height: 100vh;
+        overflow-y: auto;
+      }
+
+      .modal-content {
+        background: white;
+        border-radius: 0.5rem;
+        max-width: 28rem;
+        width: 100%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+        margin: auto;
+        box-shadow:
+          0 20px 25px -5px rgba(0, 0, 0, 0.1),
+          0 10px 10px -5px rgba(0, 0, 0, 0.04);
+      }
+
+      .modal-header {
+        padding: 1.5rem 1.5rem 0 1.5rem;
+        display: flex;
+        align-items: center;
+        justify-content: between;
+      }
+
+      .modal-body {
+        padding: 1.5rem;
+      }
+
+      .modal-footer {
+        padding: 0 1.5rem 1.5rem 1.5rem;
+        display: flex;
+        gap: 0.75rem;
+      }
+
+      .modal-footer button {
+        flex: 1;
+        padding: 0.75rem 1rem;
+        border-radius: 0.5rem;
+        font-weight: 500;
+        transition: all 0.2s ease-in-out;
+        cursor: pointer;
+      }
+
+      .btn-cancel {
+        background-color: #f9fafb;
+        color: #374151;
+        border: 1px solid #d1d5db;
+      }
+
+      .btn-cancel:hover {
+        background-color: #f3f4f6;
+        border-color: #9ca3af;
+      }
+
+      .btn-primary {
+        background-color: #3b82f6;
+        color: white;
+        border: 1px solid #3b82f6;
+      }
+
+      .btn-primary:hover {
+        background-color: #2563eb;
+        border-color: #2563eb;
+      }
+
+      /* Responsive fixes */
+      @media (max-width: 768px) {
+        .modal-content {
+          max-width: 95vw;
+          margin: 1rem;
+        }
+
+        .modal-footer {
+          flex-direction: column;
+        }
+
+        .modal-footer button {
+          width: 100%;
+        }
+      }
+    </style>
+    <script src="scripts/logoutbtn.js"></script>
+  </head>
+
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-dark sticky top-0 z-40 shadow-md">
+      <div class="header-content">
+        <a href="main.html" class="logo">Prefect Management System</a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav">
+          <a href="main.html" class="nav-link">Home</a>
+          <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <a href="central.html" class="nav-link">Central</a>
+          <a href="aquila.html" class="nav-link">Aquila</a>
+          <a href="cetus.html" class="nav-link">Cetus</a>
+          <a href="cygnus.html" class="nav-link">Cygnus</a>
+          <a href="ursa.html" class="nav-link">Ursa</a>
+          <a href="events.html" class="nav-link">Events</a>
+          <a href="accounts.html" class="nav-link nav-link-active">Accounts</a>
+          <button
+            id="logoutBtn"
+            onclick="logout()"
+            class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </nav>
+
+        <!-- Hamburger Menu -->
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="nav-menu">
+        <a href="main.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="central.html" class="nav-link">Central</a>
+        <a href="aquila.html" class="nav-link">Aquila</a>
+        <a href="cetus.html" class="nav-link">Cetus</a>
+        <a href="cygnus.html" class="nav-link">Cygnus</a>
+        <a href="ursa.html" class="nav-link">Ursa</a>
+        <a href="events.html" class="nav-link">Events</a>
+        <a href="accounts.html" class="nav-link nav-link-active">Accounts</a>
+        <button
+          id="mobileLogoutBtn"
+          onclick="logout()"
+          class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </nav>
+    </header>
+
+    <!-- Main Content Container -->
+    <div id="main-content">
+      <!-- Loading State -->
+      <div id="loadingState" class="text-center py-12">
+        <div class="inline-flex items-center">
+          <svg
+            class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              class="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              stroke-width="4"
+            ></circle>
+            <path
+              class="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+            ></path>
+          </svg>
+          <span class="text-lg">Checking authentication...</span>
+        </div>
+      </div>
+
+      <!-- Access Granted Content -->
+      <div id="accountsContent" class="hidden">
+        <main class="container mx-auto px-4 py-8">
+          <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">Account Management</h1>
+            <p class="text-gray-600">
+              Manage user accounts and permissions with Firebase integration
+            </p>
+            <div class="mt-3">
+              <span class="firebase-badge"> 🔥 Firebase Connected • Real-time sync enabled </span>
+            </div>
+          </div>
+
+          <!-- Quick Stats -->
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="stats-card">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-purple-100">
+                  <svg
+                    class="w-6 h-6 text-purple-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <p class="text-gray-500 text-sm">Total Users</p>
+                  <p class="text-2xl font-bold text-gray-800" id="totalUsersCount">0</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-card">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-green-100">
+                  <svg
+                    class="w-6 h-6 text-green-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <p class="text-gray-500 text-sm">Active Users</p>
+                  <p class="text-2xl font-bold text-gray-800" id="activeUsersCount">0</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-card">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-blue-100">
+                  <svg
+                    class="w-6 h-6 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <p class="text-gray-500 text-sm">Administrators</p>
+                  <p class="text-2xl font-bold text-gray-800" id="adminUsersCount">0</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-card">
+              <div class="flex items-center">
+                <div class="p-3 rounded-full bg-yellow-100">
+                  <svg
+                    class="w-6 h-6 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                    ></path>
+                  </svg>
+                </div>
+                <div class="ml-4">
+                  <p class="text-gray-500 text-sm">Pending</p>
+                  <p class="text-2xl font-bold text-gray-800" id="pendingUsersCount">0</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div
+            class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8"
+          >
+            <div class="flex flex-wrap gap-3">
+              <button
+                id="refreshBtn"
+                class="bg-gray-600 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors flex items-center"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  ></path>
+                </svg>
+                Refresh
+              </button>
+              <button
+                id="sampleBtn"
+                class="bg-orange-600 text-white px-4 py-2 rounded-lg hover:bg-orange-700 transition-colors flex items-center"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                  ></path>
+                </svg>
+                Load Sample Accounts
+              </button>
+              <button
+                id="testFirebaseBtn"
+                class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+              >
+                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  ></path>
+                </svg>
+                Test Firebase
+              </button>
+            </div>
+            <button
+              id="addUserBtn"
+              class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center font-medium"
+            >
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"
+                ></path>
+              </svg>
+              Add New User
+            </button>
+          </div>
+
+          <!-- Search and Filters -->
+          <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 class="text-lg font-semibold text-gray-800 mb-4">Search & Filter</h3>
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div class="md:col-span-2">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                  <svg
+                    class="inline-block w-4 h-4 mr-2 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                    ></path>
+                  </svg>
+                  Search Users
+                </label>
+                <input
+                  type="text"
+                  id="searchInput"
+                  placeholder="Search by name, email, or role..."
+                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Role</label>
+                <select
+                  id="roleFilter"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Roles</option>
+                  <option value="FULL_ACCESS_EDIT">Full Access + Edit</option>
+                  <option value="FULL_ACCESS_VIEW">Full Access (Read Only)</option>
+                  <option value="LIMITED_ACCESS_EDIT">Limited Access + Edit</option>
+                  <option value="LIMITED_ACCESS_VIEW">Limited Access (Read Only)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Filter by Status</label>
+                <select
+                  id="statusFilter"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Status</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                  <option value="pending">Pending</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Users Table -->
+          <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-gray-700 to-gray-800 p-6">
+              <h3 class="text-2xl font-bold text-white flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                  ></path>
+                </svg>
+                User Accounts
+              </h3>
+              <p class="text-gray-300 mt-1">Manage all system user accounts and permissions</p>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      User
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Role & Permissions
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Created
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="usersTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- Users will be populated here -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Loading State -->
+            <div id="tableLoadingState" class="px-6 py-12 text-center">
+              <div class="inline-flex items-center">
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-orange-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading user accounts...
+              </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="px-6 py-12 text-center hidden">
+              <svg
+                class="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M34 40h10v-4a6 6 0 00-10.712-3.714M34 40H14m20 0v-4a9.971 9.971 0 00-.712-3.714M14 40H4v-4a6 6 0 0110.712-3.714M14 40v-4a9.971 9.971 0 01.712-3.714M28 16a4 4 0 11-8 0 4 4 0 018 0zM24 20a6 6 0 110 12 6 6 0 010-12z"
+                ></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No users found</h3>
+              <p class="mt-1 text-sm text-gray-500">
+                Get started by creating your first user account or loading sample data.
+              </p>
+            </div>
+          </div>
+          <!-- Audit Log Section -->
+          <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+            <div class="bg-gradient-to-r from-indigo-700 to-indigo-800 p-6">
+              <h3 class="text-2xl font-bold text-white flex items-center">
+                <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                  ></path>
+                </svg>
+                System Audit Log
+              </h3>
+              <p class="text-indigo-200 mt-1">
+                Real-time tracking of all user activities and system changes
+              </p>
+            </div>
+
+            <!-- Audit Controls -->
+            <div class="p-6 border-b border-gray-200">
+              <div
+                class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4"
+              >
+                <div class="flex flex-wrap gap-3">
+                  <button
+                    id="refreshAuditBtn"
+                    class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      ></path>
+                    </svg>
+                    Refresh Audit Log
+                  </button>
+                  <button
+                    id="clearAuditBtn"
+                    class="bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                      ></path>
+                    </svg>
+                    Clear Old Logs
+                  </button>
+                  <button
+                    id="exportAuditBtn"
+                    class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors flex items-center"
+                  >
+                    <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      ></path>
+                    </svg>
+                    Export Logs
+                  </button>
+                </div>
+
+                <!-- Audit Filters -->
+                <div class="flex flex-wrap gap-2">
+                  <select
+                    id="auditActivityFilter"
+                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  >
+                    <option value="">All Activities</option>
+                    <option value="login">User Logins</option>
+                    <option value="user_created">User Created</option>
+                    <option value="user_updated">User Updated</option>
+                    <option value="user_deleted">User Deleted</option>
+                    <option value="role_changed">Role Changed</option>
+                    <option value="status_changed">Status Changed</option>
+                    <option value="password_reset">Password Reset</option>
+                    <option value="data_export">Data Export</option>
+                    <option value="system_error">System Error</option>
+                  </select>
+
+                  <select
+                    id="auditTimeFilter"
+                    class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm"
+                  >
+                    <option value="24h">Last 24 Hours</option>
+                    <option value="7d">Last 7 Days</option>
+                    <option value="30d">Last 30 Days</option>
+                    <option value="all">All Time</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <!-- Audit Statistics -->
+            <div class="p-4 bg-gray-50 border-b border-gray-200">
+              <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-blue-600" id="totalAuditEvents">0</div>
+                  <div class="text-xs text-gray-600">Total Events</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-green-600" id="todayLogins">0</div>
+                  <div class="text-xs text-gray-600">Today's Logins</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-orange-600" id="totalUserChanges">0</div>
+                  <div class="text-xs text-gray-600">User Changes</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-purple-600" id="totalRoleChanges">0</div>
+                  <div class="text-xs text-gray-600">Role Changes</div>
+                </div>
+                <div class="text-center">
+                  <div class="text-2xl font-bold text-red-600" id="totalErrors">0</div>
+                  <div class="text-xs text-gray-600">System Errors</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Audit Log Table -->
+            <div class="overflow-x-auto">
+              <table class="w-full">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Timestamp
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      User
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Activity
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Details
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      IP Address
+                    </th>
+                    <th
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="auditLogTableBody" class="bg-white divide-y divide-gray-200">
+                  <!-- Audit entries will be populated here -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Loading State for Audit Log -->
+            <div id="auditLoadingState" class="px-6 py-12 text-center">
+              <div class="inline-flex items-center">
+                <svg
+                  class="animate-spin -ml-1 mr-3 h-5 w-5 text-indigo-600"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    class="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    stroke-width="4"
+                  ></circle>
+                  <path
+                    class="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Loading audit log entries...
+              </div>
+            </div>
+
+            <!-- Empty State for Audit Log -->
+            <div id="auditEmptyState" class="px-6 py-12 text-center hidden">
+              <svg
+                class="mx-auto h-12 w-12 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 48 48"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              <h3 class="mt-2 text-sm font-medium text-gray-900">No audit entries found</h3>
+              <p class="mt-1 text-sm text-gray-500">
+                Audit log entries will appear here as users interact with the system.
+              </p>
+            </div>
+
+            <!-- Pagination -->
+            <div
+              class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between"
+            >
+              <div class="flex items-center">
+                <p class="text-sm text-gray-700">
+                  Showing <span id="auditCurrentEntries" class="font-medium">0</span> entries
+                  <span id="auditTotalEntries" class="font-medium">(Total: 0)</span>
+                </p>
+              </div>
+              <div class="flex items-center space-x-2">
+                <button
+                  id="auditPrevPage"
+                  class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Previous
+                </button>
+                <span id="auditPageInfo" class="px-3 py-1 text-sm text-gray-700">Page 1</span>
+                <button
+                  id="auditNextPage"
+                  class="px-3 py-1 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
+
+      <!-- Access Denied Content -->
+      <div id="accessDenied" class="access-denied-container hidden">
+        <div class="text-center max-w-md mx-auto px-6">
+          <div style="font-size: 64px; margin-bottom: 20px">🚫</div>
+          <h2 style="color: #dc3545; margin-bottom: 15px; font-size: 28px">Access Denied</h2>
+          <p style="color: #666; margin-bottom: 20px; font-size: 18px">
+            You don't have permission to access account management.
+          </p>
+          <div id="permissionDetails" class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+            <div class="text-sm text-red-800">
+              <div id="currentUserRole" class="font-medium">Current Role: Loading...</div>
+              <div class="mt-2 text-xs">
+                Required: "FULL_ACCESS_EDIT" permissions<br />
+                Contact an administrator for access.
+              </div>
+            </div>
+          </div>
+          <div class="space-y-3">
+            <a
+              href="main.html"
+              class="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+            >
+              ← Return to Dashboard
+            </a>
+            <br />
+            <button
+              id="accessDeniedLogoutBtn"
+              class="text-gray-600 hover:text-gray-800 text-sm underline"
+            >
+              Logout and Login with Different Account
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast Notifications -->
+    <div id="toastContainer" class="fixed top-4 right-4 z-50 space-y-2"></div>
+    <div
+      id="backgroundblur"
+      class="fixed inset-0 w-full h-full backdrop-blur-md bg-black/30 z-50 hidden"
+    ></div>
+
+    <!-- User Modal -->
+    <div id="userModal" class="modal-container hidden">
+      <div class="modal-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modalTitle" class="text-lg font-semibold text-gray-900 flex-1">
+            Create New User
+          </h3>
+          <button id="closeModalBtn" class="text-gray-400 hover:text-gray-600 ml-4">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+          </button>
+        </div>
+
+        <form id="userForm">
+          <div class="modal-body">
+            <input type="hidden" id="isEditMode" name="isEditMode" value="false" />
+
+            <div class="space-y-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                <input
+                  type="text"
+                  id="userName"
+                  name="name"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+                <input
+                  type="email"
+                  id="userEmail"
+                  name="email"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+
+              <div id="passwordField">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Password</label>
+                <input
+                  type="password"
+                  id="userPassword"
+                  name="password"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+                <p class="text-xs text-gray-500 mt-1">
+                  Minimum 6 characters (only required for new users)
+                </p>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1"
+                  >Role & Access Level</label
+                >
+                <select
+                  id="userRole"
+                  name="role"
+                  required
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select a role</option>
+                  <option value="FULL_ACCESS_EDIT">👑 Full Access + Edit (Administrator)</option>
+                  <option value="FULL_ACCESS_VIEW">📊 Full Access (Read Only)</option>
+                  <option value="LIMITED_ACCESS_EDIT">🔧 Limited Access + Edit</option>
+                  <option value="LIMITED_ACCESS_VIEW">👁️ Limited Access (Read Only)</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                <select
+                  id="userStatus"
+                  name="status"
+                  class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="active">✅ Active</option>
+                  <option value="pending">⏳ Pending</option>
+                  <option value="disabled">❌ Disabled</option>
+                </select>
+              </div>
+
+              <div class="bg-gray-50 p-4 rounded-lg border">
+                <p class="text-sm font-medium text-gray-700 mb-2">Permissions Preview:</p>
+                <div class="space-y-1 text-xs text-gray-600" id="permissionDisplay">
+                  <div class="text-gray-500">Select a role to see permissions</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="modal-footer">
+            <button type="button" id="cancelBtn" class="btn-cancel">Cancel</button>
+            <button type="submit" class="btn-primary" id="submitButton">
+              <span id="submitButtonText">Create User</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
+      <div class="container mx-auto px-6 flex justify-center">
+        <p class="text-sm text-center">
+          &copy; 2025 Prefect Management System. All rights reserved.
+        </p>
+      </div>
+    </footer>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
+    <!-- External Scripts -->
+    <script src="auth/firebase-config.js"></script>
+    <script src="scripts/accounts-manager.js"></script>
+    <script src="scripts/accounts-ui.js"></script>
+    <script src="scripts/accounts-audit.js"></script>
+    <script src="scripts/accounts-auth.js"></script>
+    <script src="scripts/audit-log-manager.js"></script>
+  </body>
+</html>

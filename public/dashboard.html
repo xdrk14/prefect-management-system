@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Enhanced Prefect Performance Dashboard</title>
+    <link rel="icon" type="image/png" href="../sources/icon.png?v=1" />
+
+    <!-- jsPDF Library for PDF Generation -->
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      integrity="sha512-qZvrmS2ekKPF2mSznTQsxqPgnpkI4DNhh/YTPM/UmF9p0cIcx6dUbZYKvJVyGW4W8UhZRG5oa3dJO/Hzqj9Jlw=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+
+    <!-- Alternative jsPDF CDN (backup) -->
+    <script
+      src="https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js"
+      onerror="console.warn('Primary jsPDF CDN failed, using backup')"
+      crossorigin="anonymous"
+    ></script>
+    <!-- jsPDF Library -->
+    <script src="https://unpkg.com/jspdf@latest/dist/jspdf.umd.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- External Auth & Security -->
+    <script src="auth/security-protection.js"></script>
+    <script src="auth/firebase-config.js"></script>
+    <script src="auth/auth-manager.js"></script>
+    <script src="auth/script-manager.js"></script>
+    <script src="auth/auth-system.js"></script>
+
+    <script src="scripts/logoutbtn.js"></script>
+    <script src="scripts/navigation-utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      /* House Color Themes */
+      .house-aquila {
+        background: linear-gradient(135deg, #fee2e2, #fecaca);
+        border-color: #f87171;
+      }
+      .house-cetus {
+        background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+        border-color: #34d399;
+      }
+      .house-cygnus {
+        background: linear-gradient(135deg, #fef3c7, #fde68a);
+        border-color: #fbbf24;
+      }
+      .house-ursa {
+        background: linear-gradient(135deg, #fce7f3, #f9a8d4);
+        border-color: #f472b6;
+      }
+      .house-central {
+        background: linear-gradient(135deg, #f3f4f6, #e5e7eb);
+        border-color: #9ca3af;
+      }
+
+      .text-aquila {
+        color: #dc2626;
+      }
+      .text-cetus {
+        color: #059669;
+      }
+      .text-cygnus {
+        color: #d97706;
+      }
+      .text-ursa {
+        color: #db2777;
+      }
+      .text-central {
+        color: #4b5563;
+      }
+
+      /* Animation Styles */
+      .animate-fadeIn {
+        animation: fadeIn 0.5s ease-in-out;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .performance-card {
+        transition: all 0.3s ease;
+      }
+
+      .performance-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+      }
+
+      /* Offense Badge Styles */
+      .offense-badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .offense-severe {
+        background: #fee2e2;
+        color: #dc2626;
+      }
+      .offense-moderate {
+        background: #fed7aa;
+        color: #ea580c;
+      }
+      .offense-minor {
+        background: #fef3c7;
+        color: #d97706;
+      }
+
+      /* Control Styles */
+      .time-period-btn {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        border: 2px solid #e5e7eb;
+        background: white;
+        color: #6b7280;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .time-period-btn.active {
+        background: #3b82f6;
+        color: white;
+        border-color: #3b82f6;
+      }
+
+      .time-period-btn:hover:not(.active) {
+        border-color: #3b82f6;
+        color: #3b82f6;
+      }
+
+      .export-btn {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+      }
+
+      .export-btn:hover {
+        background: linear-gradient(135deg, #059669, #047857);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      }
+
+      .search-input {
+        padding: 0.75rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        width: 100%;
+        transition: border-color 0.3s ease;
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: #3b82f6;
+      }
+
+      .scroll-container {
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .scroll-container::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .scroll-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 3px;
+      }
+
+      .scroll-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 3px;
+      }
+
+      .table-row:hover {
+        background-color: rgba(59, 130, 246, 0.05);
+      }
+
+      /* Toast notification styles */
+      .toast {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1000;
+        padding: 1rem 1.5rem;
+        border-radius: 8px;
+        color: white;
+        font-weight: 500;
+        animation: slideIn 0.3s ease-out;
+      }
+
+      .toast.success {
+        background-color: #10b981;
+      }
+      .toast.error {
+        background-color: #ef4444;
+      }
+      .toast.info {
+        background-color: #3b82f6;
+      }
+    </style>
+
+    <style>
+      @media (max-width: 1024px) {
+        body {
+          font-size: 15px;
+        }
+      }
+
+      @media (max-width: 768px) {
+        .desktop-nav {
+          display: none;
+        }
+        .nav-menu {
+          display: block;
+        }
+        body {
+          font-size: 14px;
+        }
+      }
+
+      @media (max-width: 576px) {
+        body {
+          font-size: 13px;
+        }
+      }
+
+      @media (max-width: 400px) {
+        body {
+          font-size: 12px;
+        }
+      }
+    </style>
+    <link rel="stylesheet" href="../styles/stylesheet.css" />
+  </head>
+  <body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-dark sticky top-0 z-50 shadow-md">
+      <div class="header-content">
+        <a href="main.html" class="logo">Prefect Management System</a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav" id="desktop-nav">
+          <a href="main.html" class="nav-link nav-link-active" data-page="main.html">Home</a>
+          <a href="dashboard.html" class="nav-link" data-page="dashboard.html">Dashboard</a>
+          <a href="central.html" class="nav-link" data-page="central.html" data-requires="central"
+            >Central</a
+          >
+          <a href="aquila.html" class="nav-link" data-page="aquila.html">Aquila</a>
+          <a href="cetus.html" class="nav-link" data-page="cetus.html">Cetus</a>
+          <a href="cygnus.html" class="nav-link" data-page="cygnus.html">Cygnus</a>
+          <a href="ursa.html" class="nav-link" data-page="ursa.html">Ursa</a>
+          <a href="events.html" class="nav-link" data-page="events.html">Events</a>
+          <a href="accounts.html" class="nav-link" data-page="accounts.html" data-requires="admin"
+            >Accounts</a
+          >
+          <button
+            onclick="logout()"
+            class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </nav>
+
+        <!-- Hamburger Menu -->
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="nav-menu" id="mobile-nav">
+        <a href="main.html" class="nav-link nav-link-active" data-page="main.html">Home</a>
+        <a href="dashboard.html" class="nav-link" data-page="dashboard.html">Dashboard</a>
+        <a href="central.html" class="nav-link" data-page="central.html" data-requires="central"
+          >Central</a
+        >
+        <a href="aquila.html" class="nav-link" data-page="aquila.html">Aquila</a>
+        <a href="cetus.html" class="nav-link" data-page="cetus.html">Cetus</a>
+        <a href="cygnus.html" class="nav-link" data-page="cygnus.html">Cygnus</a>
+        <a href="ursa.html" class="nav-link" data-page="ursa.html">Ursa</a>
+        <a href="events.html" class="nav-link" data-page="events.html">Events</a>
+        <a href="accounts.html" class="nav-link" data-page="accounts.html" data-requires="admin"
+          >Accounts</a
+        >
+        <button
+          onclick="logout()"
+          class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </nav>
+    </header>
+
+    <div class="container mx-auto px-4 py-8">
+      <!-- Page Title -->
+      <div class="text-center mb-8">
+        <h1 class="text-4xl font-bold text-gray-800 mb-2">
+          Enhanced Prefect Performance Dashboard
+        </h1>
+        <p class="text-gray-600">Comprehensive Performance Analytics & Management</p>
+      </div>
+
+      <!-- Time Period & Export Controls -->
+      <div class="bg-white rounded-xl shadow-lg p-6 mb-8">
+        <div class="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <!-- Time Period Selection -->
+          <div>
+            <h3 class="text-lg font-semibold text-gray-800 mb-3">Time Period</h3>
+            <div class="flex flex-wrap gap-3">
+              <button class="time-period-btn active" id="overallBtn">Overall</button>
+              <button class="time-period-btn" id="monthlyBtn">Monthly</button>
+              <button class="time-period-btn" id="weeklyBtn">Weekly</button>
+            </div>
+
+            <!-- Date Selection -->
+            <div id="dateSelection" class="mt-4 hidden">
+              <div class="flex flex-wrap gap-3">
+                <input
+                  type="month"
+                  id="monthPicker"
+                  class="search-input"
+                  style="width: auto"
+                  value="2025-07"
+                />
+                <input
+                  type="week"
+                  id="weekPicker"
+                  class="search-input"
+                  style="width: auto"
+                  value="2025-W27"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Export & Analytics Buttons -->
+          <div class="flex gap-3">
+            <button class="export-btn" id="exportBtn">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                ></path>
+              </svg>
+              Export PDF
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Performance Overview Cards -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl shadow-lg p-6 performance-card">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-green-100">
+              <svg
+                class="w-6 h-6 text-green-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-gray-500 text-sm">High Performers</p>
+              <p class="text-2xl font-bold text-gray-800" id="highPerformerCount">0</p>
+              <p class="text-xs text-green-600" id="highPerformerTrend">80%+ performance</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 performance-card">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-red-100">
+              <svg
+                class="w-6 h-6 text-red-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-gray-500 text-sm">Needs Improvement</p>
+              <p class="text-2xl font-bold text-gray-800" id="lowPerformerCount">0</p>
+              <p class="text-xs text-red-600" id="lowPerformerTrend"><40% performance</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 performance-card">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-blue-100">
+              <svg
+                class="w-6 h-6 text-blue-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-gray-500 text-sm">Total Prefects</p>
+              <p class="text-2xl font-bold text-gray-800" id="totalPrefectCount">0</p>
+              <p class="text-xs text-blue-600" id="totalPrefectTrend">Active prefects</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-lg p-6 performance-card">
+          <div class="flex items-center">
+            <div class="p-3 rounded-full bg-orange-100">
+              <svg
+                class="w-6 h-6 text-orange-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.348 16.5c-.77.833.192 2.5 1.732 2.5z"
+                ></path>
+              </svg>
+            </div>
+            <div class="ml-4">
+              <p class="text-gray-500 text-sm">Total Offenses</p>
+              <p class="text-2xl font-bold text-gray-800" id="totalOffenseCount">0</p>
+              <p class="text-xs text-orange-600" id="offenseTrend">Current period</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Analytics Dashboard (Hidden by default) -->
+      <div id="analyticsSection" class="hidden mb-8">
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+            <h2 class="text-2xl font-bold text-white flex items-center">
+              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                ></path>
+              </svg>
+              Performance Analytics Dashboard
+            </h2>
+            <p class="text-indigo-100 mt-1">Advanced Statistical Analysis & Trends</p>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <!-- Performance Trend Chart -->
+              <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-4">Performance Trends</h3>
+                <canvas id="performanceTrendChart" width="400" height="200"></canvas>
+              </div>
+              <!-- House Comparison Chart -->
+              <div class="bg-gray-50 rounded-lg p-4">
+                <h3 class="text-lg font-semibold mb-4">House Performance Comparison</h3>
+                <canvas id="houseComparisonChart" width="400" height="200"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top and Bottom Performers -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <!-- Highest Performers -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-green-500 to-emerald-600 p-6">
+            <h2 class="text-2xl font-bold text-white flex items-center">
+              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M5 3l14 9-14 9V3z"
+                ></path>
+              </svg>
+              Top Performers
+            </h2>
+            <p class="text-green-100 mt-1">Excellence in Leadership (80%+)</p>
+          </div>
+          <div class="scroll-container">
+            <div id="highPerformers" class="p-6">
+              <!-- High performers will be populated here -->
+            </div>
+          </div>
+        </div>
+
+        <!-- Lowest Performers -->
+        <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+          <div class="bg-gradient-to-r from-red-500 to-pink-600 p-6">
+            <h2 class="text-2xl font-bold text-white flex items-center">
+              <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.664-.833-2.464 0L4.348 16.5c-.77.833.192 2.5 1.732 2.5z"
+                ></path>
+              </svg>
+              Needs Attention
+            </h2>
+            <p class="text-red-100 mt-1">Focus Areas for Development (<40%)</p>
+          </div>
+          <div class="scroll-container">
+            <div id="lowPerformers" class="p-6">
+              <!-- Low performers will be populated here -->
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- House Performance Overview -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden mb-8">
+        <div class="bg-gradient-to-r from-blue-600 to-purple-600 p-6">
+          <h2 class="text-2xl font-bold text-white flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+              ></path>
+            </svg>
+            House Performance Overview
+          </h2>
+          <p class="text-blue-100 mt-1">Comparative Analysis by House</p>
+        </div>
+        <div class="p-6">
+          <div id="housePerformance" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <!-- House performance cards will be populated here -->
+          </div>
+        </div>
+      </div>
+
+      <!-- Detailed Performance Table -->
+      <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+        <div class="bg-gradient-to-r from-gray-700 to-gray-800 p-6">
+          <h2 class="text-2xl font-bold text-white flex items-center">
+            <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2z"
+              ></path>
+            </svg>
+            Detailed Performance Rankings
+          </h2>
+          <p class="text-gray-300 mt-1">Complete performance breakdown with offense tracking</p>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Rank
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  PID
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  W0 Number
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Name
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Position
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  House
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  DOB
+                </th>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                >
+                  Performance
+                </th>
+              </tr>
+            </thead>
+            <tbody id="performanceTable" class="bg-white divide-y divide-gray-200">
+              <!-- Performance data will be populated here -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-6 mt-8">
+      <div class="container mx-auto px-4 text-center">
+        <p>&copy; 2025 Enhanced Prefect Management System. All rights reserved.</p>
+      </div>
+    </footer>
+    <script src="scripts/dashboard.js"></script>
+  </body>
+</html>

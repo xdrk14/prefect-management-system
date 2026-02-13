@@ -1,0 +1,302 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <link rel="icon" type="image/png" href="../sources/icon.png?v=1" />
+    <title>Prefect Performance Dashboard</title>
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles/stylesheet.css" />
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <script src="auth/security-protection.js"></script>
+    <script src="auth/firebase-config.js"></script>
+    <script src="auth/auth-manager.js"></script>
+    <script src="auth/script-manager.js"></script>
+    <script src="auth/auth-system.js"></script>
+
+    <script src="scripts/navigation-utils.js"></script>
+
+    <script src="scripts/logoutbtn.js"></script>
+    <!-- Add this BEFORE your other script tags -->
+    <script src="scripts/audit-log-manager.js"></script>
+    <link rel="stylesheet" href="../styles/modal-styles.css" />
+    <script src="scripts/prefect-table-manager.js"></script>
+    <script src="/scripts/add-prefect-manager.js"></script>
+    <script src="scripts/edit-manager.js"></script>
+    <script src="scripts/prefect-search-filter.js"></script>
+    <!-- ADD THIS -->
+    <script src="scripts/advanced-search-utils.js"></script>
+  </head>
+
+  <body>
+    <header class="bg-dark sticky top-0 z-50 shadow-md">
+      <div class="header-content">
+        <a href="main.html" class="logo">Prefect Management System</a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav">
+          <a href="main.html" class="nav-link">Home</a>
+          <a href="dashboard.html" class="nav-link">Dashboard</a>
+          <a href="central.html" class="nav-link">Central</a>
+          <a href="aquila.html" class="nav-link">Aquila</a>
+          <a href="cetus.html" class="nav-link nav-link-active">Cetus</a>
+          <a href="cygnus.html" class="nav-link">Cygnus</a>
+          <a href="ursa.html" class="nav-link">Ursa</a>
+          <a href="events.html" class="nav-link">Events</a>
+          <a href="accounts.html" class="nav-link">Accounts</a>
+          <button
+            onclick="logout()"
+            class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </nav>
+
+        <!-- Hamburger Menu -->
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="nav-menu">
+        <a href="main.html" class="nav-link">Home</a>
+        <a href="dashboard.html" class="nav-link">Dashboard</a>
+        <a href="central.html" class="nav-link">Central</a>
+        <a href="aquila.html" class="nav-link">Aquila</a>
+        <a href="cetus.html" class="nav-link nav-link-active">Cetus</a>
+        <a href="cygnus.html" class="nav-link">Cygnus</a>
+        <a href="ursa.html" class="nav-link">Ursa</a>
+        <a href="events.html" class="nav-link">Events</a>
+        <a href="accounts.html" class="nav-link">Accounts</a>
+        <button
+          onclick="logout()"
+          class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </nav>
+    </header>
+
+    <main class="p-6">
+      <h1 class="page-title text-3xl mb-4">Prefects Portal of Cetus</h1>
+      <br />
+
+      <div class="mb-8 bg-div-background p-6 rounded-lg border border-border-color shadow-sm">
+        <div class="flex flex-col lg:flex-row gap-4 items-start lg:items-end">
+          <!-- Main Search Input -->
+          <div class="flex-1 w-full">
+            <label for="searchInput" class="block text-sm font-medium text-primary mb-2">
+              <svg
+                class="inline w-4 h-4 mr-1"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                ></path>
+              </svg>
+              Search Prefects
+            </label>
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Search by name, admission number, class, or position..."
+              class="w-full px-4 py-3 border border-border-color rounded-lg focus:ring-2 focus:ring-accent-primary focus:border-accent-primary transition-colors duration-200 text-primary"
+            />
+          </div>
+
+          <!-- Search Filters -->
+          <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <div>
+              <label for="positionFilter" class="block text-sm font-medium text-primary mb-2"
+                >Position</label
+              >
+              <select
+                id="positionFilter"
+                class="px-3 py-3 border border-border-color rounded-lg focus:ring-2 focus:ring-accent-primary focus:border-accent-primary text-primary bg-primary"
+              >
+                <option value="">All Positions</option>
+
+                <option value="House Captain">House Captain</option>
+                <option value="Deputy House Captain">Deputy House Captain</option>
+                <option value="House Games Captain">House Games Captain</option>
+                <option value="Deputy House Games Captain">Deputy House Games Captain</option>
+                <option value="Prefect">Prefect</option>
+                <option value="House Prefect Applicants">House Prefects</option>
+                <option value="Prefect Interns">Prefect Interns</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="pointsFilter" class="block text-sm font-medium text-primary mb-2"
+                >Points Range</label
+              >
+              <select
+                id="pointsFilter"
+                class="px-3 py-3 border border-border-color rounded-lg focus:ring-2 focus:ring-accent-primary focus:border-accent-primary text-primary bg-primary"
+              >
+                <option value="">All Points</option>
+                <option value="90-100">90-100 Points</option>
+                <option value="80-89">80-89 Points</option>
+                <option value="70-79">70-79 Points</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Clear Button -->
+          <button
+            id="clearSearch"
+            class="px-4 py-3 bg-secondary text-white rounded-lg hover:opacity-80 transition-opacity duration-200 flex items-center gap-2"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"
+              ></path>
+            </svg>
+            Clear
+          </button>
+        </div>
+
+        <!-- Search Stats -->
+        <div id="searchStats" class="search-stats mt-3 hidden">
+          Showing <span id="resultsCount">0</span> results
+        </div>
+      </div>
+
+      <!-- House Captain -->
+      <h2 class="page-title text-3xl mb-4">House Captain</h2>
+      <table class="mb-8 w-full" id="CetusHouseCaptain">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- Deputy House Captain -->
+      <h2 class="page-title text-3xl mb-4">Deputy House Captain</h2>
+      <table class="mb-8 w-full" id="CetusDeputyHouseCaptain">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- House Games Captain -->
+      <h2 class="page-title text-3xl mb-4">House Games Captain</h2>
+      <table class="mb-8 w-full" id="CetusHouseGamesCaptain">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- Deputy House Games Captain -->
+      <h2 class="page-title text-3xl mb-4">Deputy House Games Captain</h2>
+      <table class="mb-8 w-full" id="CetusDeputyHouseGamesCaptain">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- Prefects -->
+      <h2 class="page-title text-3xl mb-4">Prefects</h2>
+      <table class="mb-8 w-full" id="CetusPrefects">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <!-- House Prefect Applicants -->
+      <h2 class="page-title text-3xl mb-4">House Prefects</h2>
+      <table class="mb-8 w-full" id="CetusHousePrefects">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <h2 class="page-title text-3xl mb-4">Prefect Interns</h2>
+      <table class="mb-8 w-full" id="AquilaPrefectInterns">
+        <thead>
+          <tr>
+            <th class="visible">Admission Number</th>
+            <th class="visible">Name</th>
+            <th class="visible">Class</th>
+            <th class="visible">Date of Birth</th>
+            <th class="visible">Total Points</th>
+            <th class="visible">More</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </main>
+    <footer class="bg-dark text-white mt-8 py-6 shadow-inner">
+      <div class="container mx-auto px-6 flex justify-center">
+        <p class="text-sm text-center">
+          &copy; 2025 Prefect Management System. All rights reserved.
+        </p>
+      </div>
+    </footer>
+    <script src="/scripts/real-time-updater.js"></script>
+  </body>
+</html>

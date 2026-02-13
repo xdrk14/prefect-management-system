@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <title>Prefect Performance Dashboard</title>
+    <link rel="icon" type="image/png" href="../sources/icon.png?v=1" />
+    <meta name="description" content="" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://cdn.tailwindcss.com; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https://*.googleapis.com https://*.google.com; connect-src 'self' https://*.firebase.googleapis.com https://*.firebaseapp.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com https://firebase.googleapis.com https://firestore.googleapis.com https://*.googleapis.com;"
+    />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="../styles/stylesheet.css" />
+
+    <!-- Cache control -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+
+    <!-- External Auth & Security -->
+    <script src="auth/security-protection.js"></script>
+    <script src="auth/firebase-config.js"></script>
+    <script src="auth/auth-manager.js"></script>
+    <script src="auth/script-manager.js"></script>
+    <script src="auth/auth-system.js"></script>
+
+    <script src="scripts/navigation-utils.js"></script>
+    <script src="scripts/logoutbtn.js"></script>
+
+    <style>
+      body {
+        overflow: hidden;
+      }
+      div[style*='background: rgb(255, 243, 205)'][style*='color: rgb(133, 100, 4)'] {
+        display: none !important;
+      }
+
+      /* Auth-related styles */
+      .restricted-nav {
+        opacity: 0.5;
+        pointer-events: none;
+        position: relative;
+      }
+
+      .restricted-nav::after {
+        content: '🔒';
+        position: absolute;
+        top: 50%;
+        right: 5px;
+        transform: translateY(-50%);
+        font-size: 12px;
+      }
+
+      .access-notice {
+        background: linear-gradient(135deg, #ffeaa7, #fab1a0);
+        border: 1px solid #e17055;
+        color: #2d3436;
+        padding: 12px 16px;
+        border-radius: 8px;
+        margin: 20px;
+        display: none;
+        font-size: 14px;
+      }
+    </style>
+  </head>
+
+  <body class="flex flex-col min-h-screen">
+    <!-- Access Notice (shown when user has restrictions) -->
+    <div id="access-notice" class="access-notice">
+      <strong>⚠️ Access Notice:</strong> Some features are restricted based on your role. Contact an
+      administrator for access to additional features.
+    </div>
+
+    <header class="bg-dark sticky top-0 z-50 shadow-md">
+      <div class="header-content">
+        <a href="main.html" class="logo">Prefect Management System</a>
+
+        <!-- Desktop Navigation -->
+        <nav class="desktop-nav" id="desktop-nav">
+          <a href="main.html" class="nav-link nav-link-active" data-page="main.html">Home</a>
+          <a href="dashboard.html" class="nav-link" data-page="dashboard.html">Dashboard</a>
+          <a href="central.html" class="nav-link" data-page="central.html" data-requires="central"
+            >Central</a
+          >
+          <a href="aquila.html" class="nav-link" data-page="aquila.html">Aquila</a>
+          <a href="cetus.html" class="nav-link" data-page="cetus.html">Cetus</a>
+          <a href="cygnus.html" class="nav-link" data-page="cygnus.html">Cygnus</a>
+          <a href="ursa.html" class="nav-link" data-page="ursa.html">Ursa</a>
+          <a href="events.html" class="nav-link" data-page="events.html">Events</a>
+          <a href="accounts.html" class="nav-link" data-page="accounts.html" data-requires="admin"
+            >Accounts</a
+          >
+          <button
+            onclick="logout()"
+            class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+          >
+            Logout
+          </button>
+        </nav>
+
+        <!-- Hamburger Menu -->
+        <div class="hamburger">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+      </div>
+
+      <!-- Mobile Navigation Menu -->
+      <nav class="nav-menu" id="mobile-nav">
+        <a href="main.html" class="nav-link nav-link-active" data-page="main.html">Home</a>
+        <a href="dashboard.html" class="nav-link" data-page="dashboard.html">Dashboard</a>
+        <a href="central.html" class="nav-link" data-page="central.html" data-requires="central"
+          >Central</a
+        >
+        <a href="aquila.html" class="nav-link" data-page="aquila.html">Aquila</a>
+        <a href="cetus.html" class="nav-link" data-page="cetus.html">Cetus</a>
+        <a href="cygnus.html" class="nav-link" data-page="cygnus.html">Cygnus</a>
+        <a href="ursa.html" class="nav-link" data-page="ursa.html">Ursa</a>
+        <a href="events.html" class="nav-link" data-page="events.html">Events</a>
+        <a href="accounts.html" class="nav-link" data-page="accounts.html" data-requires="admin"
+          >Accounts</a
+        >
+        <button
+          onclick="logout()"
+          class="nav-link bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700 transition duration-300"
+        >
+          Logout
+        </button>
+      </nav>
+    </header>
+
+    <main class="flex-grow flex items-center justify-center px-4">
+      <div class="absolute inset-0 opacity-100 backgroundimage" style="z-index: -5"></div>
+      <div
+        class="bg-white bg-opacity-100 px-6 py-8 md:px-12 md:py-16 rounded-3xl border border-white border-opacity-20 shadow-2xl text-center max-w-4xl w-full mx-auto"
+        style="scale: 0.7"
+      >
+        <h1
+          class="text-3xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-3 md:mb-6 text-primary animate-fade-in-down"
+        >
+          Prefect Management System
+        </h1>
+        <p
+          class="text-sm sm:text-base md:text-lg lg:text-xl text-primary text-opacity-90 mb-4 md:mb-8 animate-fade-in-up"
+        >
+          Effortlessly manage data for all prefect roles and houses.
+        </p>
+        <a
+          href="dashboard.html"
+          class="inline-block bg-blue-600 text-white font-bold py-2 px-6 md:py-3 md:px-8 rounded-full hover:bg-blue-700 transition duration-300 text-sm md:text-lg transform hover:scale-105 shadow-lg border border-white border-opacity-40"
+        >
+          <p>Go to Dashboard</p>
+        </a>
+      </div>
+    </main>
+
+    <footer class="bg-dark text-white py-6 shadow-inner mt-auto">
+      <div class="container mx-auto px-6 flex justify-center">
+        <p class="text-sm text-center">
+          &copy; 2025 Prefect Management System. All rights reserved.
+        </p>
+      </div>
+    </footer>
+    <script src="/scripts/real-time-updater.js"></script>
+  </body>
+</html>
