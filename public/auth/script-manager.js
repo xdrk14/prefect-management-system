@@ -141,7 +141,8 @@
     }
 
     shouldBlockScript(src) {
-      if (!src) return false;
+      // Ensure src is a string before processing
+      if (!src || typeof src !== 'string') return false;
 
       // Always block edit scripts initially, then allow them based on user role
       const isEditScript = this.editScripts.some(script => src.includes(script));
