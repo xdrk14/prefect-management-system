@@ -433,31 +433,8 @@ class EventManager {
 
   async deleteEvent(eventId, eventType) {
     try {
-      // [DELETE] Starting event deletion process for:
-      console.log('[DELETE] Starting event deletion process for:', eventId, eventType);
+      console.log('[DELETE] Deleting event:', eventId, eventType);
 
-      const attendees = await this.fetchEventAttendees(eventId, eventType);
-      console.log('[INFO] Found attendees:', attendees.length);
-
-      if (attendees.length > 0) {
-        const confirmed = await this.showConfirmationModal({
-            title: 'Confirm Event Deletion',
-            message: `This event has ${attendees.length} attendees. Deleting this event will also remove all attendance records.\n\nAre you sure you want to continue?`,
-            confirmText: 'Delete Event & Records',
-            confirmColor: 'red'
-        });
-        if (!confirmed) return false;
-      }
-
-      // FIXED: Clear all attendees BEFORE deleting the event to avoid foreign key constraints
-      if (attendees.length > 0) {
-        console.log('[CLEAN] Clearing attendees before event deletion...');
-        await this.clearAllEventAttendees(eventId, eventType, attendees);
-        console.log('[SUCCESS] All attendees cleared successfully');
-      }
-
-      // [DELETE] Proceeding to delete event...
-      console.log('[DELETE] Proceeding to delete event...');
       const endpoint =
         eventType === 'general' ? `/api/general-events/${eventId}` : `/api/house-events/${eventId}`;
 
@@ -475,7 +452,6 @@ class EventManager {
 
       try {
         if (window.auditLog) {
-          // Get event name from allEvents before it's deleted
           const deletedEvent = this.allEvents.find(
             e =>
               (e.GeneralEventID === eventId && eventType === 'general') ||
@@ -488,10 +464,8 @@ class EventManager {
           await window.auditLog.logActivity('event_deleted', `Event deleted: ${eventName}`, {
             eventId: eventId,
             eventType: eventType,
-            deletedAttendees: attendees.length,
             status: 'success',
           });
-          console.log('[SUCCESS] Event deletion logged to audit');
         }
       } catch (auditError) {
         console.log('[WARNING] Failed to log event deletion:', auditError);
@@ -507,52 +481,7 @@ class EventManager {
     }
   }
 
-  // FIXED: New method to clear all attendees for an event before deletion
-  async clearAllEventAttendees(eventId, eventType, attendees) {
-    const deletePromises = [];
-
-    // Group attendees by house and create deletion promises
-    const attendeesByHouse = {};
-    attendees.forEach(attendee => {
-      const house = attendee.House.toLowerCase();
-      if (!attendeesByHouse[house]) {
-        attendeesByHouse[house] = [];
-      }
-      attendeesByHouse[house].push(attendee);
-    });
-
-    // Create deletion promises for each house
-    for (const [house, houseAttendees] of Object.entries(attendeesByHouse)) {
-      for (const attendee of houseAttendees) {
-        console.log(`[DELETE] Queuing deletion: ${attendee.FullName} from ${house}`);
-
-        // Try primary endpoint first, then fallback
-        const deletePromise = this.removeAttendeeWithFallback(
-          attendee.PrefectID,
-          house,
-          eventId,
-          eventType
-        );
-
-        deletePromises.push(deletePromise);
-      }
-    }
-
-    // Execute all deletions in parallel (but limit concurrency to avoid overwhelming server)
-    const batchSize = 5; // Process 5 deletions at a time
-    for (let i = 0; i < deletePromises.length; i += batchSize) {
-      const batch = deletePromises.slice(i, i + batchSize);
-      await Promise.all(batch);
-      console.log(`[SUCCESS] Processed deletion batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(deletePromises.length / batchSize)}`);
-
-      // Small delay between batches to be gentle on the server
-      if (i + batchSize < deletePromises.length) {
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-    }
-
-    console.log('[SUCCESS] All attendees cleared successfully');
-  }
+  // Removed manual cascading deletion - now handled by backend
 
   // FIXED: Enhanced attendee removal with better error handling and fallback
   async removeAttendeeWithFallback(prefectId, house, eventId, eventType) {
@@ -1093,45 +1022,37 @@ class EventManager {
     }
   }
 
-  showDeleteConfirmation(eventId, eventType) {
-    this.deleteEventCallback = () => this.performDelete(eventId, eventType);
-    document.getElementById('confirmModal').style.display = 'block';
-  }
-
-  async performDelete(eventId, eventType) {
+  async showDeleteConfirmation(eventId, eventType) {
     try {
-      // Show loading state
-      const confirmModal = document.getElementById('confirmModal');
-      const originalContent = confirmModal.innerHTML;
+      // First fetch count to be informative
+      const attendees = await this.fetchEventAttendees(eventId, eventType);
+      const count = attendees.length;
 
-      confirmModal.innerHTML = `
-                <div class="modal-content" style="max-width: 400px;">
-                    <div class="text-center">
-                        <div class="text-4xl mb-4"><i class="icon icon-delete" style="width: 2em; height: 2em;"></i></div>
-                        <h3 class="text-xl font-semibold mb-4">Deleting Event...</h3>
-                        <div class="loading mx-auto mb-4"></div>
-                        <p class="text-gray-600 mb-6">Clearing attendees and deleting event...</p>
-                    </div>
-                </div>
-            `;
+      const message =
+        count > 0
+          ? `This event has ${count} attendees. Deleting it will also remove all their participation records.\n\nAre you sure you want to proceed?`
+          : 'Are you sure you want to delete this event? This action cannot be undone.';
 
-      const success = await this.deleteEvent(eventId, eventType);
+      const confirmed = await this.showConfirmationModal({
+        title: 'Delete Event?',
+        message: message,
+        confirmText: count > 0 ? 'Delete Event & Records' : 'Delete Event',
+        confirmColor: 'red',
+      });
 
-      if (success) {
-        this.showNotification('Event and all attendees deleted successfully!', 'success');
-        this.closeConfirmModal();
+      if (confirmed) {
+        this.showNotification('Deleting event...', 'info');
+        const success = await this.deleteEvent(eventId, eventType);
+        if (success) {
+          this.showNotification('Event deleted successfully!', 'success');
+        }
       }
     } catch (error) {
-      this.showNotification(`Error deleting event: ${error.message}`, 'error');
-      this.closeConfirmModal();
+      this.showNotification(`Error: ${error.message}`, 'error');
     }
   }
 
-  confirmDelete() {
-    if (this.deleteEventCallback) {
-      this.deleteEventCallback();
-    }
-  }
+
 
   // ==================== ATTENDANCE MANAGEMENT ====================
 

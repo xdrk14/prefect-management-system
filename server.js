@@ -697,12 +697,31 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
   app.delete('/api/general-events/:id', async (req, res) => {
     try {
-      const result = await safeRun('DELETE FROM GeneralEvents WHERE GeneralEventID = ?', [
-        req.params.id,
-      ]);
-      if (result.changes === 0) return res.status(404).json({ error: 'Event not found' });
-      clearCache('events');
-      res.json({ message: 'General event deleted', GeneralEventID: req.params.id });
+      await safeRun('BEGIN TRANSACTION');
+      try {
+        // Cascading delete: Remove participants from all house event tables first
+        // Using sequential loop for absolute reliability in a transaction
+        for (const h of HOUSES) {
+          await safeRun(`DELETE FROM ${TABLES[h].events} WHERE GeneralEventID = ?`, [req.params.id]);
+        }
+
+        const result = await safeRun('DELETE FROM GeneralEvents WHERE GeneralEventID = ?', [
+          req.params.id,
+        ]);
+
+        if (result.changes === 0) {
+          await safeRun('ROLLBACK');
+          return res.status(404).json({ error: 'Event not found' });
+        }
+
+        await safeRun('COMMIT');
+        clearCache('events');
+        clearCache('participation');
+        res.json({ message: 'General event deleted', GeneralEventID: req.params.id });
+      } catch (innerError) {
+        await safeRun('ROLLBACK');
+        throw innerError;
+      }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }
@@ -841,12 +860,30 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
   app.delete('/api/house-events/:id', async (req, res) => {
     try {
-      const result = await safeRun('DELETE FROM HouseEvents WHERE HouseEventID = ?', [
-        req.params.id,
-      ]);
-      if (result.changes === 0) return res.status(404).json({ error: 'House event not found' });
-      clearCache('events');
-      res.json({ message: 'House event deleted', HouseEventID: req.params.id });
+      await safeRun('BEGIN TRANSACTION');
+      try {
+        // Cascading delete: Remove participants from all house event tables first
+        for (const h of HOUSES) {
+          await safeRun(`DELETE FROM ${TABLES[h].events} WHERE HouseEventsID = ?`, [req.params.id]);
+        }
+
+        const result = await safeRun('DELETE FROM HouseEvents WHERE HouseEventID = ?', [
+          req.params.id,
+        ]);
+
+        if (result.changes === 0) {
+          await safeRun('ROLLBACK');
+          return res.status(404).json({ error: 'House event not found' });
+        }
+
+        await safeRun('COMMIT');
+        clearCache('events');
+        clearCache('participation');
+        res.json({ message: 'House event deleted', HouseEventID: req.params.id });
+      } catch (innerError) {
+        await safeRun('ROLLBACK');
+        throw innerError;
+      }
     } catch (error) {
       res.status(500).json({ error: error.message });
     }

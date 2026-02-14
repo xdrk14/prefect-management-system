@@ -1,6 +1,7 @@
 // Clean Security Protection
 // File: public/auth/security-protection.js
 (function() {
+
   'use strict';
   class SecurityProtection {
     constructor() {
