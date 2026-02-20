@@ -1,22 +1,24 @@
 // Clean Firebase Configuration
 // File: public/auth/firebase-config.js
-(function () {
+(async function () {
   'use strict';
 
-  // REPLACE WITH YOUR ACTUAL FIREBASE CONFIG
-  const firebaseConfig = {
-    apiKey: 'AIzaSyDPLPkcSAsYSG40T1Ex23kBos7NoEuARMc',
-    authDomain: 'prefectmanagementsystem.firebaseapp.com',
-    projectId: 'prefectmanagementsystem',
-    storageBucket: 'prefectmanagementsystem.firebasestorage.app',
-    messagingSenderId: '582867197955',
-    appId: '1:582867197955:web:1973522f7d3c3f7f972e36',
-    measurementId: 'G-G27HTPVVP0',
+  // Wait for Firebase SDK to load before fetching and init
+  const checkFirebase = () => {
+    if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' && typeof firebase.firestore === 'function') {
+      initFirebase();
+    } else {
+      setTimeout(checkFirebase, 100);
+    }
   };
 
-  // Initialize Firebase immediately
-  function initFirebase() {
+  // Initialize Firebase after fetching config
+  async function initFirebase() {
     try {
+      const response = await fetch('/api/config/firebase');
+      if (!response.ok) throw new Error('Failed to fetch Firebase config');
+      const firebaseConfig = await response.json();
+
       if (firebase.apps.length === 0) {
         firebase.initializeApp(firebaseConfig);
       }
@@ -39,20 +41,7 @@
     }
   }
 
-  // Initialize when Firebase SDK is available
-  if (typeof firebase !== 'undefined') {
-    initFirebase();
-  } else {
-    // Wait for Firebase SDK to load
-    const checkFirebase = () => {
-      if (typeof firebase !== 'undefined' && typeof firebase.auth === 'function' && typeof firebase.firestore === 'function') {
-        initFirebase();
-      } else {
-        setTimeout(checkFirebase, 100);
-      }
-    };
-    checkFirebase();
-  }
+  checkFirebase();
 })();
  document.addEventListener("DOMContentLoaded", () => {
     const el = document.getElementById("currentYear");

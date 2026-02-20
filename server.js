@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const path = require('path');
 const cluster = require('cluster');
@@ -310,6 +311,21 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
   console.log('\n[API] ===== API ROUTES REGISTRATION =====');
   let routeCount = 0;
+
+  // ===== CONFIG ENDPOINT =====
+  app.get('/api/config/firebase', (req, res) => {
+    res.json({
+      apiKey: process.env.FIREBASE_API_KEY,
+      authDomain: process.env.FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.FIREBASE_PROJECT_ID,
+      storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.FIREBASE_APP_ID,
+      measurementId: process.env.FIREBASE_MEASUREMENT_ID,
+    });
+  });
+  routeCount++;
+
   // ===== BATCH REQUEST ENDPOINT (10x FASTER) =====
   app.post('/api/batch', authenticate, async (req, res) => {
     try {
