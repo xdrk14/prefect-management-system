@@ -81,16 +81,23 @@ class RealTimeUpdateManager {
     }
   }
 
-  connectSSE() {
+  async connectSSE() {
     if (this.eventSource) {
       this.eventSource.close();
     }
 
     try {
       console.log('[CONNECT] Attempting SSE connection...');
+      
+      // Get auth token if available
+      let tokenParam = '';
+      if (window.firebaseAuth?.currentUser) {
+        const token = await window.firebaseAuth.currentUser.getIdToken();
+        tokenParam = `&token=${token}`;
+      }
 
       // Create SSE connection with user ID and page info
-      const sseUrl = `/api/sse/updates?userId=${this.userId}&page=${this.currentPage}&timestamp=${Date.now()}`;
+      const sseUrl = `/api/sse/updates?userId=${this.userId}&page=${this.currentPage}&timestamp=${Date.now()}${tokenParam}`;
       this.eventSource = new EventSource(sseUrl);
 
       this.eventSource.onopen = () => {
@@ -141,7 +148,7 @@ class RealTimeUpdateManager {
     }
   }
 
-  connectWebSocket() {
+  async connectWebSocket() {
     if (this.websocket) {
       this.websocket.close();
     }
@@ -149,8 +156,15 @@ class RealTimeUpdateManager {
     try {
       console.log('[CONNECT] Attempting WebSocket connection...');
 
+      // Get auth token if available
+      let tokenParam = '';
+      if (window.firebaseAuth?.currentUser) {
+        const token = await window.firebaseAuth.currentUser.getIdToken();
+        tokenParam = `&token=${token}`;
+      }
+
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const wsUrl = `${protocol}//${window.location.host}/ws/updates?userId=${this.userId}&page=${this.currentPage}`;
+      const wsUrl = `${protocol}//${window.location.host}/ws/updates?userId=${this.userId}&page=${this.currentPage}${tokenParam}`;
 
       this.websocket = new WebSocket(wsUrl);
 

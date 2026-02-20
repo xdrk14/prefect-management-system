@@ -1,422 +1,60 @@
 {
   "name": "prefect-management-system",
-  "version": "2.1.0",
-  "description": "Ultra-fast, high-performance prefect management system with Firebase authentication, advanced caching, multi-tier architecture, and comprehensive analytics",
+  "version": "3.0.0",
+  "description": "Ultra-fast, extreme-performance prefect management system with Firebase authentication, maximum multi-core CPU usage, caching, and comprehensive analytics",
   "main": "server.js",
   "scripts": {
-    "start": "NODE_ENV=production node server.js",
-    "start:dev": "NODE_ENV=development node server.js",
-    "start:cluster": "NODE_ENV=production PM2_HOME=.pm2 pm2 start ecosystem.config.js",
-    "start:single": "NODE_ENV=production node --max-old-space-size=4096 server.js",
-    "dev": "NODE_ENV=development nodemon server.js --watch server.js --watch database/ --watch public/",
-    "dev:debug": "NODE_ENV=development DEBUG=* nodemon server.js",
-    "dev:inspect": "NODE_ENV=development node --inspect server.js",
-    "setup-db": "node database/setup.js",
-    "setup-db:fresh": "rm -f database/prefect_system.db && npm run setup-db",
-    "setup-auth": "node scripts/setup-auth.js",
-    "setup-firebase": "node scripts/firebase-setup.js",
-    "setup": "npm run setup-db && npm run setup-auth",
-    "setup:fresh": "npm run setup-db:fresh && npm run setup-auth",
-    "convert-data": "node database/converter.js",
-    "migrate": "node database/migrate.js",
-    "migrate:rollback": "node database/migrate.js --rollback",
-    "migrate:auth": "node database/auth-migration.js",
-    "seed": "node database/seed.js",
-    "seed:dev": "NODE_ENV=development node database/seed.js",
-    "seed:prod": "NODE_ENV=production node database/seed.js",
-    "seed:auth": "node database/seed-auth.js",
-    "backup": "node scripts/backup.js",
-    "backup:auto": "node scripts/backup.js --auto",
-    "backup:auth": "node scripts/backup-auth.js",
-    "restore": "node scripts/restore.js",
-    "restore:latest": "node scripts/restore.js --latest",
-    "restore:auth": "node scripts/restore-auth.js",
-    "db:reset": "npm run setup-db:fresh && npm run seed:dev && npm run seed:auth",
-    "db:status": "node -e \"const sqlite3=require('sqlite3'); const db=new sqlite3.Database('./database/prefect_system.db'); db.get('SELECT COUNT(*) as count FROM sqlite_master WHERE type=\\\"table\\\"', (err,row)=>{console.log(err?'DB Error':row.count+' tables found'); db.close();});\"",
-    "auth:status": "node scripts/auth-status.js",
-    "auth:test": "node scripts/test-auth.js",
-    "auth:create-user": "node scripts/create-user.js",
-    "auth:reset-users": "node scripts/reset-auth-users.js",
-    "test": "NODE_ENV=test jest --coverage --verbose",
-    "test:watch": "NODE_ENV=test jest --watch --verbose",
-    "test:integration": "NODE_ENV=test jest --testPathPattern=integration --runInBand",
-    "test:unit": "NODE_ENV=test jest --testPathPattern=unit",
-    "test:api": "NODE_ENV=test jest --testPathPattern=api --runInBand",
-    "test:auth": "NODE_ENV=test jest --testPathPattern=auth --runInBand",
-    "test:smoke": "NODE_ENV=test jest --testNamePattern=\"smoke test\"",
-    "test:security": "NODE_ENV=test jest --testPathPattern=security --runInBand",
-    "lint": "eslint server.js database/ public/scripts/ public/auth/ --ext .js",
-    "lint:fix": "eslint server.js database/ public/scripts/ public/auth/ --ext .js --fix",
-    "lint:watch": "nodemon --exec \"npm run lint\" --watch server.js --watch database/ --watch public/ --ext js",
-    "lint:auth": "eslint public/auth/ --ext .js",
-    "format": "prettier --write \"**/*.{js,json,md,html,css}\"",
-    "format:check": "prettier --check \"**/*.{js,json,md,html,css}\"",
-    "validate": "npm run lint && npm run format:check && npm run test:unit",
-    "validate:full": "npm run lint && npm run format:check && npm run test && npm run auth:test",
-    "validate:auth": "npm run lint:auth && npm run test:auth && npm run auth:test",
-    "build": "npm run validate && npm run setup-db",
-    "build:prod": "NODE_ENV=production npm run validate:full && npm run setup-db && npm run seed:prod && npm run seed:auth",
-    "build:auth": "npm run validate:auth && npm run setup-auth",
-    "prebuild": "npm run clean:logs",
-    "postbuild": "npm run db:status && npm run auth:status",
-    "docker:build": "docker build -t prefect-system:latest .",
-    "docker:build:dev": "docker build -f Dockerfile.dev -t prefect-system:dev .",
-    "docker:run": "docker run -p 3000:3000 --name prefect-container prefect-system:latest",
-    "docker:run:dev": "docker run -p 3000:3000 -v $(pwd):/app --name prefect-dev prefect-system:dev",
-    "docker:stop": "docker stop prefect-container || true",
-    "docker:clean": "docker stop prefect-container || true && docker rm prefect-container || true",
-    "docker:logs": "docker logs -f prefect-container",
-    "performance": "NODE_ENV=production clinic doctor --on-port 'autocannon -c 10 -d 30 http://localhost:3000/api/health' -- node server.js",
-    "performance:flame": "NODE_ENV=production clinic flame --on-port 'autocannon -c 10 -d 30 http://localhost:3000/api/prefects' -- node server.js",
-    "performance:bubbleprof": "NODE_ENV=production clinic bubbleprof --on-port 'autocannon -c 10 -d 30 http://localhost:3000/api/dashboard/stats' -- node server.js",
-    "performance:auth": "NODE_ENV=production clinic doctor --on-port 'autocannon -c 5 -d 15 -m POST -H \"Content-Type: application/json\" -b \"{\\\"email\\\":\\\"admin1@company.com\\\",\\\"password\\\":\\\"Admin123!@#\\\"}\" http://localhost:3000/api/auth/login' -- node server.js",
-    "benchmark": "autocannon -c 50 -d 30 -p 10 http://localhost:3000/api/health",
-    "benchmark:api": "autocannon -c 30 -d 60 -p 5 http://localhost:3000/api/prefects",
-    "benchmark:heavy": "autocannon -c 100 -d 120 -p 20 http://localhost:3000/api/dashboard/performance",
-    "benchmark:auth": "autocannon -c 10 -d 30 -m POST -H \"Content-Type: application/json\" -b \"{\\\"email\\\":\\\"test@company.com\\\",\\\"password\\\":\\\"Test123!@#\\\"}\" http://localhost:3000/api/auth/login",
-    "stress-test": "artillery run tests/stress-test.yml",
-    "stress-test:api": "artillery run tests/api-stress.yml",
-    "stress-test:auth": "artillery run tests/auth-stress.yml",
-    "load-test": "artillery run tests/load-test.yml",
-    "load-test:auth": "artillery run tests/auth-load-test.yml",
-    "security": "npm audit --audit-level=moderate",
-    "security:fix": "npm audit fix --force",
-    "security:snyk": "snyk test --severity-threshold=medium",
-    "security:check": "npm run security && npm run security:snyk",
-    "security:auth": "node scripts/security-scan-auth.js",
-    "docs": "jsdoc -c jsdoc.conf.json -d docs/",
-    "docs:serve": "cd docs && python -m http.server 8080",
-    "docs:open": "npm run docs && npm run docs:serve",
-    "docs:auth": "jsdoc public/auth/ -d docs/auth/ -R README.md",
-    "clean": "rm -rf node_modules package-lock.json",
-    "clean:cache": "rm -rf .cache .tmp",
-    "clean:logs": "rm -rf logs/*.log",
-    "clean:coverage": "rm -rf coverage/",
-    "clean:docs": "rm -rf docs/",
-    "clean:auth": "rm -rf public/auth/.cache",
-    "clean:all": "npm run clean && npm run clean:cache && npm run clean:logs && npm run clean:coverage && npm run clean:docs && npm run clean:auth",
-    "reset": "npm run clean:all && npm install",
-    "reset:auth": "npm run clean:auth && npm run setup:fresh",
-    "update": "npm update && npm audit fix",
-    "update:check": "npm outdated",
-    "update:major": "npx npm-check-updates -u && npm install",
-    "preinstall": "node -e \"if(process.env.NODE_ENV==='production'){console.log('Installing for production...')}\"",
-    "postinstall": "npm run db:status || echo 'Database not found - run npm run setup-db'",
-    "prestart": "npm run db:status && npm run auth:status",
-    "monitor": "pm2 monit",
-    "logs": "pm2 logs --lines 100",
-    "logs:auth": "tail -f logs/auth.log",
-    "status": "pm2 status",
-    "stop": "pm2 stop all",
-    "restart": "pm2 restart all",
-    "reload": "pm2 reload all",
-    "health-check": "curl -f http://localhost:3000/api/health || exit 1",
-    "health-check:auth": "curl -f http://localhost:3000/api/auth/status || exit 1",
-    "quick-test": "npm run health-check && curl -s http://localhost:3000/api/schema | jq '.houses | length'",
-    "quick-test:auth": "npm run health-check:auth && npm run auth:test",
-    "ci": "npm ci && npm run validate:full && npm run build",
-    "ci:test": "npm ci && npm run test",
-    "ci:auth": "npm ci && npm run validate:auth && npm run build:auth",
-    "deploy:prep": "npm run clean:all && npm ci --production && npm run build:prod",
-    "deploy:auth": "npm run validate:auth && npm run build:auth",
-    "serve": "npm start"
+    "start": "cross-env NODE_ENV=production node server.js",
+    "start:cluster": "cross-env NODE_ENV=production pm2 start server.js -i max",
+    "dev": "cross-env NODE_ENV=development nodemon server.js --watch server.js --watch database/ --watch public/ --watch .env",
+    "setup": "node database/setup.js",
+    "clean": "npx rimraf node_modules package-lock.json",
+    "reset": "npm run clean && npm install",
+    "build": "npm run setup",
+    "lint": "eslint server.js database/ public/scripts/ public/auth/",
+    "format": "prettier --write \"**/*.{js,json,html,css}\"",
+    "security": "npm audit fix --force"
   },
-  "keywords": [
-    "prefect",
-    "management",
-    "school",
-    "student",
-    "administration",
-    "firebase",
-    "authentication",
-    "role-based-access",
-    "security",
-    "session-management",
-    "high-performance",
-    "caching",
-    "sqlite",
-    "express",
-    "analytics",
-    "dashboard",
-    "education",
-    "real-time",
-    "multi-tier",
-    "enterprise",
-    "nodejs",
-    "clustering",
-    "api",
-    "crud",
-    "multi-cpu",
-    "user-management",
-    "authorization",
-    "jwt",
-    "oauth"
-  ],
-  "author": {
-    "name": "Hasthi",
-    "email": "hasthi@example.com",
-    "url": "https://github.com/hasthi"
-  },
-  "license": "MIT",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/hasthi/prefect-management-system.git"
-  },
-  "bugs": {
-    "url": "https://github.com/hasthi/prefect-management-system/issues"
-  },
-  "homepage": "https://github.com/hasthi/prefect-management-system#readme",
   "dependencies": {
-    "bcryptjs": "^2.4.3",
-    "compression": "^1.8.0",
-    "cors": "^2.8.5",
-    "csv-parser": "^3.0.0",
+    "compression": "^1.7.4",
+    "cross-env": "^7.0.3",
     "dotenv": "^16.4.5",
     "express": "^4.21.2",
-    "express-rate-limit": "^7.5.1",
-    "express-session": "^1.18.1",
-    "express-validator": "^7.2.0",
     "express-ws": "^5.0.2",
-    "fast-json-stringify": "^5.16.1",
     "firebase": "^11.10.0",
     "firebase-admin": "^13.4.0",
-    "helmet": "^7.2.0",
-    "joi": "^17.13.3",
-    "jsonwebtoken": "^9.0.2",
-    "lru-cache": "^10.4.3",
-    "multer": "^1.4.5-lts.1",
-    "node-cache": "^5.1.2",
-    "passport": "^0.7.0",
-    "passport-firebase-jwt": "^1.2.1",
-    "passport-local": "^1.0.0",
+    "helmet": "^8.1.0",
+    "hpp": "^0.2.3",
     "sqlite3": "^5.1.7",
-    "uuid": "^10.0.0",
-    "winston": "^3.17.0",
-    "xlsx": "^0.18.5"
+    "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "@types/node": "^20.17.9",
-    "artillery": "^2.0.20",
-    "autocannon": "^7.15.0",
-    "clinic": "^13.0.0",
-    "concurrently": "^9.1.0",
-    "cross-env": "^7.0.3",
-    "eslint": "^9.18.0",
-    "eslint-config-prettier": "^9.1.0",
-    "eslint-plugin-node": "^11.1.0",
-    "eslint-plugin-security": "^3.0.1",
-    "firebase-tools": "^13.30.2",
-    "jest": "^29.7.0",
-    "jest-environment-node": "^29.7.0",
-    "jsdoc": "^4.0.4",
+    "eslint": "^9.39.3",
+    "eslint-config-prettier": "^10.1.8",
     "nodemon": "^3.1.7",
-    "pm2": "^5.4.3",
     "prettier": "^3.4.2",
-    "snyk": "^1.1294.0",
-    "supertest": "^7.0.0"
-  },
-  "optionalDependencies": {
-    "pdfkit": "^0.15.0",
-    "sharp": "^0.33.5"
-  },
-  "peerDependencies": {
-    "pm2": "^5.0.0"
+    "rimraf": "^6.0.1"
   },
   "engines": {
-    "node": ">=18.0.0",
-    "npm": ">=9.0.0"
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
   },
-  "os": [
-    "linux",
-    "darwin",
-    "win32"
-  ],
-  "cpu": [
-    "x64",
-    "arm64"
-  ],
-  "config": {
-    "port": 3000,
-    "database": "./database/prefect_system.db",
-    "cache_ttl": 300,
-    "rate_limit": 100,
-    "cluster_workers": "auto",
-    "max_memory": "4096",
-    "log_level": "info",
-    "auth": {
-      "session_timeout": 1800,
-      "max_login_attempts": 5,
-      "lockout_duration": 900,
-      "jwt_expiry": "24h",
-      "bcrypt_rounds": 12
-    },
-    "firebase": {
-      "auth_timeout": 30000,
-      "retry_attempts": 3,
-      "cache_users": true
-    }
-  },
+  "author": "Hasthi",
+  "license": "MIT",
   "nodemonConfig": {
     "ignore": [
-      "database/prefect_system.db",
+      "database/*.db",
+      "database/*.db-*",
       "logs/",
       "backups/",
-      "coverage/",
-      "node_modules/",
-      "docs/",
-      ".cache/",
-      ".tmp/",
-      "public/auth/.cache"
+      "node_modules/"
     ],
-    "ext": "js,json,html,css",
-    "env": {
-      "NODE_ENV": "development",
-      "DEBUG": "app:*,auth:*"
-    },
-    "delay": 1000,
-    "watch": [
-      "server.js",
-      "database/",
-      "public/",
-      "public/auth/"
-    ]
+    "ext": "js,json,html,css"
   },
-  "jest": {
-    "testEnvironment": "node",
-    "coverageDirectory": "coverage",
-    "collectCoverageFrom": [
-      "server.js",
-      "database/**/*.js",
-      "public/auth/**/*.js",
-      "public/scripts/**/*.js",
-      "!database/prefect_system.db",
-      "!database/migrations/**",
-      "!**/node_modules/**"
-    ],
-    "testMatch": [
-      "**/tests/**/*.test.js",
-      "**/__tests__/**/*.js",
-      "**/tests/auth/**/*.test.js"
-    ],
-    "coverageThreshold": {
-      "global": {
-        "branches": 70,
-        "functions": 70,
-        "lines": 70,
-        "statements": 70
-      }
-    },
-    "setupFilesAfterEnv": [
-      "<rootDir>/tests/setup.js",
-      "<rootDir>/tests/auth-setup.js"
-    ],
-    "testTimeout": 30000,
-    "maxWorkers": 4
-  },
-  "eslintConfig": {
-    "env": {
-      "node": true,
-      "es2022": true,
-      "jest": true,
-      "browser": true
-    },
-    "extends": [
-      "eslint:recommended",
-      "prettier"
-    ],
-    "plugins": [
-      "security"
-    ],
-    "parserOptions": {
-      "ecmaVersion": "latest",
-      "sourceType": "module"
-    },
-    "rules": {
-      "no-console": "warn",
-      "no-unused-vars": "error",
-      "prefer-const": "error",
-      "no-var": "error",
-      "object-shorthand": "error",
-      "prefer-arrow-callback": "error",
-      "security/detect-object-injection": "error",
-      "security/detect-non-literal-regexp": "error",
-      "security/detect-unsafe-regex": "error",
-      "security/detect-buffer-noassert": "error",
-      "security/detect-child-process": "error",
-      "security/detect-disable-mustache-escape": "error",
-      "security/detect-eval-with-expression": "error",
-      "security/detect-no-csrf-before-method-override": "error",
-      "security/detect-pseudoRandomBytes": "error"
-    },
-    "ignorePatterns": [
-      "node_modules/",
-      "coverage/",
-      "docs/",
-      "database/prefect_system.db"
-    ]
-  },
-  "prettier": {
-    "semi": true,
-    "trailingComma": "es5",
-    "singleQuote": true,
-    "printWidth": 100,
-    "tabWidth": 2,
-    "useTabs": false,
-    "quoteProps": "as-needed",
-    "bracketSpacing": true,
-    "arrowParens": "avoid"
-  },
-  "funding": {
-    "type": "individual",
-    "url": "https://github.com/sponsors/hasthi"
-  },
-  "volta": {
-    "node": "20.11.0",
-    "npm": "10.2.4"
-  },
-  "packageManager": "npm@10.2.4",
-  "files": [
-    "server.js",
-    "database/",
-    "public/",
-    "public/auth/",
-    "styles/",
-    "sources/",
-    "scripts/",
-    "README.md",
-    "LICENSE",
-    "ecosystem.config.js"
-  ],
-  "directories": {
-    "lib": "./database",
-    "doc": "./docs",
-    "test": "./tests"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "npm run lint:fix && npm run format && npm run validate:auth",
-      "pre-push": "npm run validate:full"
-    }
-  },
-  "security": {
-    "advisories": {
-      "ignore": []
-    }
-  },
-  "firebase": {
-    "hosting": {
-      "public": "public",
-      "ignore": [
-        "firebase.json",
-        "**/.*",
-        "**/node_modules/**"
-      ],
-      "rewrites": [
-        {
-          "source": "**",
-          "destination": "/index.html"
-        }
-      ]
-    }
+  "overrides": {
+    "ajv": "^8.18.0",
+    "minimatch": "^10.2.2",
+    "glob": "^11.0.1",
+    "tar": "^7.5.9"
   }
 }

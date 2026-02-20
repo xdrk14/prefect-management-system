@@ -25,6 +25,10 @@ try {
   }
 }
 
+const helmet = require('helmet');
+const xss = require('xss-clean');
+const hpp = require('hpp');
+
 const app = express();
 
 // Set proper MIME types for JavaScript files
@@ -103,6 +107,13 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
 
   console.log('\n[SECURITY] ===== SECURITY SETUP =====');
   // Security headers
+  app.use(helmet({
+    contentSecurityPolicy: false, // Disabled for compatibility with dynamic scripts/sockets
+    crossOriginEmbedderPolicy: false
+  }));
+  app.use(xss());
+  app.use(hpp());
+
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -293,11 +304,13 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   // Authentication Middleware
   const authenticate = async (req, res, next) => {
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const queryToken = req.query.token;
+    
+    if ((!authHeader || !authHeader.startsWith('Bearer ')) && !queryToken) {
       return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
 
-    const idToken = authHeader.split('Bearer ')[1];
+    const idToken = queryToken || authHeader.split('Bearer ')[1];
     try {
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       req.user = decodedToken;
@@ -1309,7 +1322,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   const realTimeStartCount = routeCount;
 
   // SSE endpoint for real-time updates
-  app.get('/api/sse/updates', (req, res) => {
+  app.get('/api/sse/updates', authenticate, (req, res) => {
     const { userId, page, timestamp } = req.query;
 
     console.log(`[CONNECT] SSE Connection: ${userId} on page ${page}`);
@@ -1372,7 +1385,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // HTTP endpoint for broadcasting updates (used by SSE clients)
-  app.post('/api/sse/broadcast', (req, res) => {
+  app.post('/api/sse/broadcast', authenticate, (req, res) => {
     const update = req.body;
 
     console.log(`[BROADCAST] Broadcasting update:`, update);
@@ -1495,7 +1508,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Heartbeat endpoint for connection health
-  app.get('/api/sse/heartbeat', (req, res) => {
+  app.get('/api/sse/heartbeat', authenticate, (req, res) => {
     const now = Date.now();
     const activeClients = [];
 
@@ -1551,7 +1564,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Statistics endpoint
-  app.get('/api/sse/stats', (req, res) => {
+  app.get('/api/sse/stats', authenticate, (req, res) => {
     const stats = {
       connectedClients: connectedClients.size,
       recentUpdates: updateBroadcast.size,
@@ -1570,7 +1583,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Force refresh endpoint (for admin use)
-  app.post('/api/sse/force-refresh', (req, res) => {
+  app.post('/api/sse/force-refresh', authenticate, (req, res) => {
     const { page, message } = req.body;
 
     const refreshUpdate = {
@@ -1795,6 +1808,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   // New analytics route: Position distribution
   app.get(
     '/api/analytics/position-distribution/:house',
+    authenticate,
     cacheMiddleware(600000),
     async (req, res) => {
       try {
@@ -1915,7 +1929,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Add offense to prefect
-  app.post('/api/edit/prefects/:house/:id/offenses', async (req, res) => {
+  app.post('/api/edit/prefects/:house/:id/offenses', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -1940,7 +1954,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Delete offense
-  app.delete('/api/edit/prefects/:house/:id/offenses/:date', async (req, res) => {
+  app.delete('/api/edit/prefects/:house/:id/offenses/:date', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -1962,7 +1976,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Add event to prefect
-  app.post('/api/edit/prefects/:house/:id/events', async (req, res) => {
+  app.post('/api/edit/prefects/:house/:id/events', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -1989,7 +2003,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Remove event from prefect
-  app.delete('/api/edit/prefects/:house/:id/events/:eventType/:eventId', async (req, res) => {
+  app.delete('/api/edit/prefects/:house/:id/events/:eventType/:eventId', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2022,7 +2036,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   // ... REST OF YOUR EXISTING ROUTES CONTINUE HERE ...
 
   // Updated search to include W0Number and Class
-  app.get('/api/search/prefects', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/search/prefects', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const { q, house, position, grade } = req.query;
       if (!q || q.length < 2) return res.status(400).json({ error: 'Query too short' });
@@ -2049,7 +2063,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Updated search offenses to include new fields in joins
-  app.get('/api/search/offenses', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/search/offenses', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const { q, house, fromDate, toDate } = req.query;
       if (!q || q.length < 2) return res.status(400).json({ error: 'Query too short' });
@@ -2078,7 +2092,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // Search events across both tables (unchanged)
-  app.get('/api/search/events', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/search/events', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const { q } = req.query;
       if (!q || q.length < 2) return res.status(400).json({ error: 'Query too short' });
@@ -2103,7 +2117,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // New search route: Search by W0Number across all houses
-  app.get('/api/search/w0number/:w0number', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/search/w0number/:w0number', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const w0number = req.params.w0number;
       const queries = HOUSES.map(h =>
@@ -2120,7 +2134,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // New search route: Search by class across all houses
-  app.get('/api/search/class/:class', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/search/class/:class', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const className = req.params.class;
       const queries = HOUSES.map(h =>
@@ -2159,14 +2173,14 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  app.post('/api/cache/clear', (req, res) => {
+  app.post('/api/cache/clear', authenticate, (req, res) => {
     cache.clear();
     res.json({ message: 'Cache cleared', timestamp: Date.now() });
   });
   routeCount++;
 
   // Updated schema endpoint to include new structure
-  app.get('/api/schema', cacheMiddleware(7200000), (req, res) => {
+  app.get('/api/schema', authenticate, cacheMiddleware(7200000), (req, res) => {
     res.json({
       houses: HOUSES,
       tables: TABLES,
@@ -2205,7 +2219,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // New utility route: Get all W0Numbers in use
-  app.get('/api/utility/w0numbers-in-use', cacheMiddleware(600000), async (req, res) => {
+  app.get('/api/utility/w0numbers-in-use', authenticate, cacheMiddleware(600000), async (req, res) => {
     try {
       const results = {};
       for (const house of HOUSES) {
@@ -2222,7 +2236,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // New utility route: Get all classes in use
-  app.get('/api/utility/classes-in-use', cacheMiddleware(600000), async (req, res) => {
+  app.get('/api/utility/classes-in-use', authenticate, cacheMiddleware(600000), async (req, res) => {
     try {
       const results = {};
       for (const house of HOUSES) {
@@ -2244,7 +2258,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   const bulkStartCount = routeCount;
 
   // Updated bulk prefects to include W0Number and Class
-  app.post('/api/prefects/:house/bulk', async (req, res) => {
+  app.post('/api/prefects/:house/bulk', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2286,7 +2300,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  app.post('/api/offenses/:house/bulk', async (req, res) => {
+  app.post('/api/offenses/:house/bulk', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2311,7 +2325,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log('[INFO] Registering POSITION-SPECIFIC routes...');
   const positionStartCount = routeCount;
 
-  app.get('/api/prefects/:house/position/:position', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/prefects/:house/position/:position', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2329,6 +2343,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   // Updated event participants to include new schema fields
   app.get(
     '/api/events/:eventType/:eventId/participants',
+    authenticate,
     cacheMiddleware(600000),
     async (req, res) => {
       try {
@@ -2362,7 +2377,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   routeCount++;
 
   // New route: Get all positions across houses
-  app.get('/api/positions/summary', cacheMiddleware(600000), async (req, res) => {
+  app.get('/api/positions/summary', authenticate, cacheMiddleware(600000), async (req, res) => {
     try {
       const summary = {};
       for (const house of HOUSES) {
@@ -2387,7 +2402,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log('[INFO] Registering LEGACY PARTICIPATION routes...');
   const legacyStartCount = routeCount;
 
-  app.get('/api/participation/:house', cacheMiddleware(600000), async (req, res) => {
+  app.get('/api/participation/:house', authenticate, cacheMiddleware(600000), async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2408,7 +2423,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  app.get('/api/participation/:house/:prefectId', cacheMiddleware(300000), async (req, res) => {
+  app.get('/api/participation/:house/:prefectId', authenticate, cacheMiddleware(300000), async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2432,7 +2447,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  app.post('/api/participation/:house', async (req, res) => {
+  app.post('/api/participation/:house', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
@@ -2451,7 +2466,7 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  app.delete('/api/participation/:house/:prefectId/:eventType/:eventId', async (req, res) => {
+  app.delete('/api/participation/:house/:prefectId/:eventType/:eventId', authenticate, async (req, res) => {
     try {
       const house = validateHouse(req.params.house);
       if (!house) return res.status(400).json({ error: 'Invalid house' });
