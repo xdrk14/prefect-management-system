@@ -13,7 +13,8 @@
     "build": "npm run setup",
     "lint": "eslint server.js database/ public/scripts/ public/auth/",
     "format": "prettier --write \"**/*.{js,json,html,css}\"",
-    "security": "npm audit fix --force"
+    "security": "npm audit fix --force",
+    "protect-auth": "node scripts/protect-auth.js"
   },
   "dependencies": {
     "compression": "^1.7.4",
@@ -25,7 +26,9 @@
     "firebase-admin": "^13.4.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
+    "javascript-obfuscator": "^5.3.0",
     "sqlite3": "^5.1.7",
+    "uglify-js": "^3.19.3",
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
