@@ -58,7 +58,6 @@
         mobileLogoutBtn: () => this.handleLogout(),
         accessDeniedLogoutBtn: () => this.handleLogout(),
         refreshBtn: () => this.refreshData(),
-        sampleBtn: () => this.initializeSampleAccounts(),
         testFirebaseBtn: () => this.testFirebaseConnection(),
         addUserBtn: () => this.openCreateModal(),
         closeModalBtn: () => this.closeModal(),
