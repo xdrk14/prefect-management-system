@@ -17,13 +17,13 @@
     "protect-auth": "node scripts/protect-auth.js"
   },
   "dependencies": {
-    "compression": "^1.7.4",
-    "cross-env": "^7.0.3",
-    "dotenv": "^16.4.5",
-    "express": "^4.21.2",
+    "compression": "^1.8.1",
+    "cross-env": "^10.1.0",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
     "express-ws": "^5.0.2",
-    "firebase": "^11.10.0",
-    "firebase-admin": "^13.4.0",
+    "firebase": "^12.10.0",
+    "firebase-admin": "^13.7.0",
     "helmet": "^8.1.0",
     "hpp": "^0.2.3",
     "javascript-obfuscator": "^5.3.0",
@@ -32,9 +32,9 @@
     "xss-clean": "^0.1.4"
   },
   "devDependencies": {
-    "eslint": "^9.39.3",
+    "eslint": "^10.0.2",
     "eslint-config-prettier": "^10.1.8",
-    "nodemon": "^3.1.7",
+    "nodemon": "^3.1.14",
     "prettier": "^3.4.2",
     "rimraf": "^6.0.1"
   },
@@ -58,6 +58,10 @@
     "ajv": "^8.18.0",
     "minimatch": "^10.2.2",
     "glob": "^11.0.1",
-    "tar": "^7.5.9"
+    "tar": "^7.5.9",
+    "http-proxy-agent": "^7.0.2",
+    "https-proxy-agent": "^7.0.6",
+    "ip": "^2.0.1",
+    "fast-xml-parser": "^4.4.1"
   }
 }
