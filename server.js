@@ -31,6 +31,7 @@ const hpp = require('hpp');
 console.log('[FIRE] ==============================================');
 console.log('[INFO] PREFECT MANAGEMENT SYSTEM - ULTRA SERVER');
 console.log('[FIRE] ==============================================');
+console.log('[BUILD] server.js build 2026-03-06');
 console.log(`[DATE] Started: ${new Date().toISOString()}`);
 console.log(`[PLATFORM] Platform: ${os.platform()} ${os.arch()}`);
 console.log(`[MEM] Total Memory: ${Math.round(os.totalmem() / 1024 / 1024 / 1024)}GB`);
@@ -40,10 +41,15 @@ console.log(`[CPU] CPU Cores: ${os.cpus().length}`);
 console.log(`[NODE] Node Version: ${process.version}`);
 console.log(`[PID] Process ID: ${process.pid}`);
 
-// Multi-CPU clustering (explicitly opt-in to avoid EADDRINUSE issues in normal runs)
-const USE_INTERNAL_CLUSTER = process.env.USE_INTERNAL_CLUSTER === 'true';
+// Multi-CPU clustering (safe-by-default: disabled under PM2, optional override via env)
+const RUNNING_UNDER_PM2 = Boolean(process.env.pm_id || process.env.PM2_HOME || process.env.NODE_APP_INSTANCE);
+const ENABLE_CLUSTER =
+  process.env.NODE_ENV === 'production' &&
+  !RUNNING_UNDER_PM2 &&
+  process.env.DISABLE_CLUSTER !== 'true' &&
+  process.env.USE_INTERNAL_CLUSTER !== 'false';
 
-if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'production') {
+if (ENABLE_CLUSTER && cluster.isMaster) {
   const workers = Math.min(os.cpus().length, 8);
   console.log('\n[LAUNCH] ===== CLUSTER MASTER INITIALIZATION =====');
   console.log(`[ADMIN] Master Process: ${process.pid}`);
@@ -78,7 +84,9 @@ if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'produc
   const updateBroadcast = new Map();
 
   console.log('\n[WS] ===== REAL-TIME UPDATE SYSTEM =====');
-  const PORT = process.env.PORT || 3000;
+  let PORT = Number(process.env.PORT) || 3000;
+  const ALLOW_PORT_FALLBACK =
+    process.env.ALLOW_PORT_FALLBACK === 'true' || process.env.NODE_ENV !== 'production';
 
   console.log('\n[SECURITY] ===== SECURITY SETUP =====');
   // Security headers
@@ -86,8 +94,9 @@ if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'produc
     contentSecurityPolicy: false, // Disabled for compatibility with dynamic scripts/sockets
     crossOriginEmbedderPolicy: false
   }));
-  app.use(xss());
-  app.use(hpp());
+  // NOTE: Express 5 exposes `req.query` as a read-only getter.
+  // Some legacy security middlewares attempt `req.query = ...` which crashes.
+  // We implement safe in-place sanitization instead of using those middlewares.
 
   app.use((req, res, next) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
@@ -132,6 +141,45 @@ if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'produc
   console.log('[SUCCESS] Body parsing configured');
   console.log('   - JSON limit: 10MB');
   console.log('   - URL encoded: Extended mode');
+
+  // Express 5-safe query/body sanitization & basic HPP defense (in-place, no reassignment)
+  const sanitizeString = value => {
+    if (typeof value !== 'string') return value;
+    // Minimal neutralization for angle brackets + common XSS vectors (kept lightweight)
+    return value
+      .replace(/<\s*script/gi, '&lt;script')
+      .replace(/<\s*\/\s*script\s*>/gi, '&lt;/script&gt;')
+      .replace(/[<>]/g, m => (m === '<' ? '&lt;' : '&gt;'));
+  };
+
+  const sanitizeInPlace = obj => {
+    if (!obj || typeof obj !== 'object') return;
+    for (const key of Object.keys(obj)) {
+      const val = obj[key];
+      if (Array.isArray(val)) {
+        // HPP defense: collapse arrays to last value
+        const last = val.length ? val[val.length - 1] : undefined;
+        obj[key] = sanitizeString(last);
+        continue;
+      }
+      if (val && typeof val === 'object') {
+        sanitizeInPlace(val);
+        continue;
+      }
+      obj[key] = sanitizeString(val);
+    }
+  };
+
+  app.use((req, res, next) => {
+    try {
+      sanitizeInPlace(req.query);
+      sanitizeInPlace(req.body);
+    } catch (e) {
+      console.warn('[SECURITY] Sanitization warning:', e?.message || e);
+    }
+    next();
+  });
+  console.log('[SUCCESS] Request sanitization configured (Express 5-safe)');
 
   app.use(express.static('public'));
   app.use('/styles', express.static('styles'));
@@ -2474,111 +2522,138 @@ if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'produc
       }
     }
   }, 30000); // Increased to 30 seconds for better performance
-  // START SERVER
-  app.listen(PORT, () => {
-    console.log('\n[SUCCESS] ===== SERVER SUCCESSFULLY STARTED =====');
-    console.log(`[LAUNCH] Server Status: ONLINE`);
-    console.log(`[URL] Server URL: http://localhost:${PORT}`);
-    console.log(`[WORKER] Worker Process: ${process.pid}`);
-    console.log(`[HOUSE] Houses Available: ${HOUSES.join(', ')}`);
-    console.log(`[ID] Total API Routes: ${routeCount} endpoints`);
-    console.log(`[DB] Cache System: Active (In-Memory Map)`);
-    console.log(`[DB] Database Mode: Single Connection (WAL Mode)`);
-    console.log(`[SECURITY] Security: SQL Injection Protection, Rate Limiting, CORS`);
-    console.log(`[STATS] Performance: Multi-CPU Clustering, Connection Pooling`);
-    console.log(`[INFO] Features: CRUD Operations, Analytics, Search, Bulk Operations`);
-    console.log('\n[TARGET] ===== AVAILABLE ENDPOINTS =====');
-    console.log('[LIST] Prefects (Updated with W0Number & Class):');
-    console.log('   GET    /api/prefects');
-    console.log('   GET    /api/prefects/:house');
-    console.log('   GET    /api/prefects/:house/:id');
-    console.log('   GET    /api/prefects/:house/w0number/:w0number');
-    console.log('   GET    /api/prefects/:house/class/:class');
-    console.log('   GET    /api/prefects/:house/grade/:grade');
-    console.log('   POST   /api/prefects/:house');
-    console.log('   PUT    /api/prefects/:house/:id');
-    console.log('   DELETE /api/prefects/:house/:id');
-    console.log('[INFO] Offenses:');
-    console.log('   GET    /api/offenses');
-    console.log('   GET    /api/offenses/:house');
-    console.log('   GET    /api/offenses/:house/:prefectId');
-    console.log('   POST   /api/offenses/:house');
-    console.log('   PUT    /api/offenses/:house/:prefectId/:date');
-    console.log('   DELETE /api/offenses/:house/:prefectId/:date');
-    console.log('[INFO] Events:');
-    console.log('   GET    /api/general-events');
-    console.log('   GET    /api/house-events');
-    console.log('   GET    /api/all-events');
-    console.log('   POST   /api/general-events');
-    console.log('   POST   /api/house-events');
-    console.log('[INFO] Event Participation:');
-    console.log('   GET    /api/events-participation/:house');
-    console.log('   POST   /api/events-participation/:house');
-    console.log('   DELETE /api/events-participation/:house/:prefectId/:eventType/:eventId');
-    console.log('[INFO] Analytics (Enhanced):');
-    console.log('   GET    /api/dashboard/stats');
-    console.log('   GET    /api/dashboard/performance');
-    console.log('   GET    /api/dashboard/recent');
-    console.log('   GET    /api/analytics/top-offenders');
-    console.log('   GET    /api/analytics/most-active');
-    console.log('   GET    /api/analytics/grade-distribution/:house');
-    console.log('   GET    /api/analytics/position-distribution/:house');
-    console.log('[INFO] Search (Enhanced):');
-    console.log('   GET    /api/search/prefects?q=...&grade=...');
-    console.log('   GET    /api/search/offenses?q=...');
-    console.log('   GET    /api/search/events?q=...');
-    console.log('   GET    /api/search/w0number/:w0number');
-    console.log('   GET    /api/search/class/:class');
-    console.log('[INFO] Utilities (Enhanced):');
-    console.log('   GET    /api/health');
-    console.log('   GET    /api/schema');
-    console.log('   GET    /api/utility/w0numbers-in-use');
-    console.log('   GET    /api/utility/classes-in-use');
-    console.log('   POST   /api/cache/clear');
-    console.log('[INFO] Positions:');
-    console.log('   GET    /api/prefects/:house/position/:position');
-    console.log('   GET    /api/positions/summary');
-    console.log('\n[TARGET] ===== NEW SCHEMA FEATURES =====');
-    console.log('[INFO] W0Number Support:');
-    console.log('   - Search by W0Number: /api/search/w0number/W00100');
-    console.log('   - W0Numbers in use: /api/utility/w0numbers-in-use');
-    console.log('[INFO] Class Support:');
-    console.log('   - Filter by class: /api/prefects/:house/class/11%20Sci%20A');
-    console.log('   - Filter by grade: /api/prefects/:house/grade/11');
-    console.log('   - Classes in use: /api/utility/classes-in-use');
-    console.log('[INFO] Enhanced Analytics:');
-    console.log('   - Grade distribution: /api/analytics/grade-distribution/:house');
-    console.log('   - Position distribution: /api/analytics/position-distribution/:house');
-    console.log('[INFO] Central Team Support:');
-    console.log('   - Central house included in all operations');
-    console.log('   - Separate position types for Central team');
-    console.log('\n[TARGET] ===== QUICK TEST COMMANDS =====');
-    console.log('Health Check:');
-    console.log(`   curl http://localhost:${PORT}/api/health`);
-    console.log('Get Schema (Updated):');
-    console.log(`   curl http://localhost:${PORT}/api/schema`);
-    console.log('Get All Prefects (All 5 Houses):');
-    console.log(`   curl http://localhost:${PORT}/api/prefects`);
-    console.log('Search by W0Number:');
-    console.log(`   curl http://localhost:${PORT}/api/search/w0number/W00100`);
-    console.log('Get Classes in Use:');
-    console.log(`   curl http://localhost:${PORT}/api/utility/classes-in-use`);
-    console.log('Grade Distribution:');
-    console.log(`   curl http://localhost:${PORT}/api/analytics/grade-distribution/aquila`);
-    console.log('\n[SUCCESS] ===== PREFECT MANAGEMENT SYSTEM READY =====');
-    console.log('[INFO] Enterprise-Grade School Management System');
-    console.log('[STATS] Ultra-Fast [STATS] Multi-CPU [STATS] Secure [STATS] Scalable');
-    console.log('[INFO] Updated with Enhanced Schema Support');
-    console.log('[LIST] W0Number [LIST] Class [LIST] Grade [LIST] Central Team');
-    console.log('==============================================');
-    console.log('[CONNECT] Real-time Updates:');
-    console.log('   [CONNECT] SSE: GET /api/sse/updates');
-    console.log('   [BROADCAST] Broadcast: POST /api/sse/broadcast');
-    console.log('   [WS] WebSocket: WS /ws/updates');
-    console.log('   [HEARTBEAT] Heartbeat: GET /api/sse/heartbeat');
-    console.log('   [STATS] Stats: GET /api/sse/stats');
-    console.log('   [SYNC] Force Refresh: POST /api/sse/force-refresh');
-  });
+
+  // START SERVER (handle EADDRINUSE instead of crashing)
+  const startServer = (port, remainingFallbacks) => {
+    const server = app.listen(port, () => {
+      PORT = port;
+      console.log('\n[SUCCESS] ===== SERVER SUCCESSFULLY STARTED =====');
+      console.log(`[LAUNCH] Server Status: ONLINE`);
+      console.log(`[URL] Server URL: http://localhost:${PORT}`);
+      console.log(`[WORKER] Worker Process: ${process.pid}`);
+      console.log(`[HOUSE] Houses Available: ${HOUSES.join(', ')}`);
+      console.log(`[ID] Total API Routes: ${routeCount} endpoints`);
+      console.log(`[DB] Cache System: Active (In-Memory Map)`);
+      console.log(`[DB] Database Mode: Single Connection (WAL Mode)`);
+      console.log(`[SECURITY] Security: SQL Injection Protection, Rate Limiting, CORS`);
+      console.log(`[STATS] Performance: ${ENABLE_CLUSTER ? 'Multi-CPU (cluster)' : 'Single process'}`);
+      console.log(`[INFO] Features: CRUD Operations, Analytics, Search, Bulk Operations`);
+      console.log('\n[TARGET] ===== AVAILABLE ENDPOINTS =====');
+      console.log('[LIST] Prefects (Updated with W0Number & Class):');
+      console.log('   GET    /api/prefects');
+      console.log('   GET    /api/prefects/:house');
+      console.log('   GET    /api/prefects/:house/:id');
+      console.log('   GET    /api/prefects/:house/w0number/:w0number');
+      console.log('   GET    /api/prefects/:house/class/:class');
+      console.log('   GET    /api/prefects/:house/grade/:grade');
+      console.log('   POST   /api/prefects/:house');
+      console.log('   PUT    /api/prefects/:house/:id');
+      console.log('   DELETE /api/prefects/:house/:id');
+      console.log('[INFO] Offenses:');
+      console.log('   GET    /api/offenses');
+      console.log('   GET    /api/offenses/:house');
+      console.log('   GET    /api/offenses/:house/:prefectId');
+      console.log('   POST   /api/offenses/:house');
+      console.log('   PUT    /api/offenses/:house/:prefectId/:date');
+      console.log('   DELETE /api/offenses/:house/:prefectId/:date');
+      console.log('[INFO] Events:');
+      console.log('   GET    /api/general-events');
+      console.log('   GET    /api/house-events');
+      console.log('   GET    /api/all-events');
+      console.log('   POST   /api/general-events');
+      console.log('   POST   /api/house-events');
+      console.log('[INFO] Event Participation:');
+      console.log('   GET    /api/events-participation/:house');
+      console.log('   POST   /api/events-participation/:house');
+      console.log('   DELETE /api/events-participation/:house/:prefectId/:eventType/:eventId');
+      console.log('[INFO] Analytics (Enhanced):');
+      console.log('   GET    /api/dashboard/stats');
+      console.log('   GET    /api/dashboard/performance');
+      console.log('   GET    /api/dashboard/recent');
+      console.log('   GET    /api/analytics/top-offenders');
+      console.log('   GET    /api/analytics/most-active');
+      console.log('   GET    /api/analytics/grade-distribution/:house');
+      console.log('   GET    /api/analytics/position-distribution/:house');
+      console.log('[INFO] Search (Enhanced):');
+      console.log('   GET    /api/search/prefects?q=...&grade=...');
+      console.log('   GET    /api/search/offenses?q=...');
+      console.log('   GET    /api/search/events?q=...');
+      console.log('   GET    /api/search/w0number/:w0number');
+      console.log('   GET    /api/search/class/:class');
+      console.log('[INFO] Utilities (Enhanced):');
+      console.log('   GET    /api/health');
+      console.log('   GET    /api/schema');
+      console.log('   GET    /api/utility/w0numbers-in-use');
+      console.log('   GET    /api/utility/classes-in-use');
+      console.log('   POST   /api/cache/clear');
+      console.log('[INFO] Positions:');
+      console.log('   GET    /api/prefects/:house/position/:position');
+      console.log('   GET    /api/positions/summary');
+      console.log('\n[TARGET] ===== NEW SCHEMA FEATURES =====');
+      console.log('[INFO] W0Number Support:');
+      console.log('   - Search by W0Number: /api/search/w0number/W00100');
+      console.log('   - W0Numbers in use: /api/utility/w0numbers-in-use');
+      console.log('[INFO] Class Support:');
+      console.log('   - Filter by class: /api/prefects/:house/class/11%20Sci%20A');
+      console.log('   - Filter by grade: /api/prefects/:house/grade/11');
+      console.log('   - Classes in use: /api/utility/classes-in-use');
+      console.log('[INFO] Enhanced Analytics:');
+      console.log('   - Grade distribution: /api/analytics/grade-distribution/:house');
+      console.log('   - Position distribution: /api/analytics/position-distribution/:house');
+      console.log('[INFO] Central Team Support:');
+      console.log('   - Central house included in all operations');
+      console.log('   - Separate position types for Central team');
+      console.log('\n[TARGET] ===== QUICK TEST COMMANDS =====');
+      console.log('Health Check:');
+      console.log(`   curl http://localhost:${PORT}/api/health`);
+      console.log('Get Schema (Updated):');
+      console.log(`   curl http://localhost:${PORT}/api/schema`);
+      console.log('Get All Prefects (All 5 Houses):');
+      console.log(`   curl http://localhost:${PORT}/api/prefects`);
+      console.log('Search by W0Number:');
+      console.log(`   curl http://localhost:${PORT}/api/search/w0number/W00100`);
+      console.log('Get Classes in Use:');
+      console.log(`   curl http://localhost:${PORT}/api/utility/classes-in-use`);
+      console.log('Grade Distribution:');
+      console.log(`   curl http://localhost:${PORT}/api/analytics/grade-distribution/aquila`);
+      console.log('\n[SUCCESS] ===== PREFECT MANAGEMENT SYSTEM READY =====');
+      console.log('[INFO] Enterprise-Grade School Management System');
+      console.log('[STATS] Ultra-Fast [STATS] Multi-CPU [STATS] Secure [STATS] Scalable');
+      console.log('[INFO] Updated with Enhanced Schema Support');
+      console.log('[LIST] W0Number [LIST] Class [LIST] Grade [LIST] Central Team');
+      console.log('==============================================');
+      console.log('[CONNECT] Real-time Updates:');
+      console.log('   [CONNECT] SSE: GET /api/sse/updates');
+      console.log('   [BROADCAST] Broadcast: POST /api/sse/broadcast');
+      console.log('   [HEARTBEAT] Heartbeat: GET /api/sse/heartbeat');
+      console.log('   [STATS] Stats: GET /api/sse/stats');
+      console.log('   [SYNC] Force Refresh: POST /api/sse/force-refresh');
+    });
+
+    server.on('error', err => {
+      if (err && err.code === 'EADDRINUSE') {
+        const msg = `[ERROR] Port ${port} already in use.`;
+        if (ALLOW_PORT_FALLBACK && remainingFallbacks > 0) {
+          console.warn(`${msg} Retrying on ${port + 1}...`);
+          try {
+            server.close();
+          } catch {
+            // ignore
+          }
+          return setTimeout(() => startServer(port + 1, remainingFallbacks - 1), 250);
+        }
+        console.error(`${msg} Stop the other process or set PORT to a free port.`);
+        return process.exit(1);
+      }
+
+      console.error('[CRITICAL] Server listen error:', err);
+      return process.exit(1);
+    });
+
+    return server;
+  };
+
+  const server = startServer(PORT, 20);
 
   // GRACEFUL SHUTDOWN
   const shutdown = () => {
@@ -2588,13 +2663,30 @@ if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'produc
     console.log(`[DB] Cache Entries: ${cache.size}`);
     console.log('[DB] Closing database connections...');
 
-    new Promise(resolve => {
-      db.close(err => {
-        if (err) console.error(`[ERROR] DB close error:`, err.message);
-        else console.log(`[SUCCESS] DB connection closed`);
-        resolve();
+    const closeHttpServer = () =>
+      new Promise(resolve => {
+        try {
+          server.close(() => {
+            console.log('[SUCCESS] HTTP server closed');
+            resolve();
+          });
+        } catch (e) {
+          console.warn('[WARNING] HTTP server close failed:', e?.message || e);
+          resolve();
+        }
       });
-    })
+
+    const closeDatabase = () =>
+      new Promise(resolve => {
+        db.close(err => {
+          if (err) console.error(`[ERROR] DB close error:`, err.message);
+          else console.log(`[SUCCESS] DB connection closed`);
+          resolve();
+        });
+      });
+
+    closeHttpServer()
+      .then(() => closeDatabase())
       .then(() => {
         console.log('[SUCCESS] All database connections closed successfully');
         console.log('[SUCCESS] Graceful shutdown completed');
