@@ -5,7 +5,6 @@ const cluster = require('cluster');
 const os = require('os');
 const admin = require('firebase-admin');
 
-const expressWs = require('express-ws');
 const sqlite3 = require('sqlite3').verbose();
 
 // Initialize Firebase Admin
@@ -29,29 +28,6 @@ const helmet = require('helmet');
 const xss = require('xss-clean');
 const hpp = require('hpp');
 
-const app = express();
-
-// Set proper MIME types for JavaScript files
-express.static.mime.define({ 'application/javascript': ['js'] });
-
-// Serve static files from public directory with correct MIME types
-app.use(
-  express.static('public', {
-    setHeaders: (res, path) => {
-      if (path.endsWith('.js')) {
-        res.setHeader('Content-Type', 'application/javascript');
-      }
-      // Add security headers
-      res.setHeader('X-Frame-Options', 'DENY');
-      res.setHeader('X-Content-Type-Options', 'nosniff');
-      res.setHeader('Referrer-Policy', 'no-referrer');
-    },
-  })
-);
-
-// Your existing routes and middleware should remain unchanged
-// Just add the above configuration
-
 console.log('[FIRE] ==============================================');
 console.log('[INFO] PREFECT MANAGEMENT SYSTEM - ULTRA SERVER');
 console.log('[FIRE] ==============================================');
@@ -64,8 +40,10 @@ console.log(`[CPU] CPU Cores: ${os.cpus().length}`);
 console.log(`[NODE] Node Version: ${process.version}`);
 console.log(`[PID] Process ID: ${process.pid}`);
 
-// Multi-CPU clustering for 30+ concurrent requests
-if (cluster.isMaster && process.env.NODE_ENV === 'production') {
+// Multi-CPU clustering (explicitly opt-in to avoid EADDRINUSE issues in normal runs)
+const USE_INTERNAL_CLUSTER = process.env.USE_INTERNAL_CLUSTER === 'true';
+
+if (USE_INTERNAL_CLUSTER && cluster.isMaster && process.env.NODE_ENV === 'production') {
   const workers = Math.min(os.cpus().length, 8);
   console.log('\n[LAUNCH] ===== CLUSTER MASTER INITIALIZATION =====');
   console.log(`[ADMIN] Master Process: ${process.pid}`);
@@ -94,9 +72,6 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
 
   const app = express();
-
-  // Enable WebSocket support for real-time updates
-  const wsInstance = expressWs(app);
 
   // Store connected clients for real-time updates
   const connectedClients = new Map();
@@ -302,10 +277,25 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   console.log('[SUCCESS] Helper functions initialized');
 
   // Authentication Middleware
+  const isProduction = process.env.NODE_ENV === 'production';
+  const isAdminInitialized = admin.apps && admin.apps.length > 0;
+
   const authenticate = async (req, res, next) => {
+    // In non-production environments, allow the app to run even if Firebase Admin
+    // is not configured, to prevent the entire system from breaking during local development.
+    if (!isProduction && !isAdminInitialized) {
+      console.warn(
+        '[AUTH] Firebase Admin not initialized. Bypassing token verification in development mode.'
+      );
+      if (!req.user) {
+        req.user = { uid: 'dev-user', devMode: true };
+      }
+      return next();
+    }
+
     const authHeader = req.headers.authorization;
     const queryToken = req.query.token;
-    
+
     if ((!authHeader || !authHeader.startsWith('Bearer ')) && !queryToken) {
       return res.status(401).json({ error: 'Unauthorized: No token provided' });
     }
@@ -314,10 +304,18 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
     try {
       const decodedToken = await admin.auth().verifyIdToken(idToken);
       req.user = decodedToken;
-      next();
+      return next();
     } catch (error) {
-      console.error('[AUTH-ERROR] Token verification failed:', error.message);
-      res.status(401).json({ error: 'Unauthorized: Invalid token' });
+      console.error('[AUTH-ERROR] Token verification failed:', error);
+
+      // If Admin SDK itself is misconfigured, surface a clear server error instead of looping 401s
+      if (!isAdminInitialized || (error.code && error.code.startsWith('app/'))) {
+        return res
+          .status(500)
+          .json({ error: 'Server authentication configuration error. Check Firebase Admin setup.' });
+      }
+
+      return res.status(401).json({ error: 'Unauthorized: Invalid token' });
     }
   };
   console.log('[SUCCESS] Authentication middleware initialized');
@@ -1420,92 +1418,9 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
   });
   routeCount++;
 
-  // WebSocket support (alternative to SSE)
-  app.ws('/ws/updates', (ws, req) => {
-    const userId = req.query.userId;
-    const page = req.query.page;
-
-    console.log(`[WS] WebSocket Connection: ${userId} on page ${page}`);
-
-    const clientInfo = {
-      id: userId,
-      page,
-      websocket: ws,
-      connectedAt: Date.now(),
-      lastPing: Date.now(),
-    };
-
-    connectedClients.set(userId, clientInfo);
-
-    // Send connection confirmation
-    ws.send(
-      JSON.stringify({
-        type: 'connected',
-        userId,
-        timestamp: Date.now(),
-        connectedClients: connectedClients.size,
-      })
-    );
-
-    // Send recent updates to new client
-    const recentUpdates = Array.from(updateBroadcast.values())
-      .sort((a, b) => b.timestamp - a.timestamp)
-      .slice(0, 10);
-
-    recentUpdates.forEach(update => {
-      if (update.userId !== userId) {
-        ws.send(JSON.stringify(update));
-      }
-    });
-
-    // Handle incoming messages
-    ws.on('message', message => {
-      try {
-        const update = JSON.parse(message);
-        console.log(`[BROADCAST] WebSocket update from ${userId}:`, update);
-
-        // Store and broadcast update
-        const updateKey = `${update.type}_${update.timestamp}`;
-        updateBroadcast.set(updateKey, update);
-
-        // Broadcast to all other clients
-        let broadcastCount = 0;
-        connectedClients.forEach((client, clientId) => {
-          if (clientId !== userId) {
-            try {
-              if (client.websocket && client.websocket.readyState === 1) {
-                client.websocket.send(JSON.stringify(update));
-                broadcastCount++;
-              } else if (client.response) {
-                client.response.write(`event: ${update.type}\n`);
-                client.response.write(`data: ${JSON.stringify(update)}\n\n`);
-                broadcastCount++;
-              }
-              client.lastPing = Date.now();
-            } catch (error) {
-              console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
-              connectedClients.delete(clientId);
-            }
-          }
-        });
-
-        console.log(`[BROADCAST] Update broadcast to ${broadcastCount} clients`);
-      } catch (error) {
-        console.error('[ERROR] Error processing WebSocket message:', error);
-      }
-    });
-
-    ws.on('close', () => {
-      console.log(`[WS] WebSocket Disconnected: ${userId}`);
-      connectedClients.delete(userId);
-    });
-
-    ws.on('error', error => {
-      console.error(`[ERROR] WebSocket Error for ${userId}:`, error);
-      connectedClients.delete(userId);
-    });
-  });
-  routeCount++;
+  // WebSocket support (alternative to SSE) has been removed due to
+  // incompatibility between express-ws and Express 5's request object.
+  // Real-time updates are provided via SSE endpoints above.
 
   // Heartbeat endpoint for connection health
   app.get('/api/sse/heartbeat', authenticate, (req, res) => {
@@ -2546,7 +2461,10 @@ if (cluster.isMaster && process.env.NODE_ENV === 'production') {
       const now = Date.now();
       let expiredCount = 0;
       for (const [key, value] of cache.entries()) {
-        if (value.expiry < now) {
+        if (!value || typeof value.exp !== 'number') {
+          continue;
+        }
+        if (value.exp < now) {
           cache.delete(key);
           expiredCount++;
         }
