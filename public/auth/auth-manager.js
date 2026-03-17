@@ -48,14 +48,43 @@
 
     async loadUserData(user) {
       try {
-        const email = user.email.toLowerCase();
+        const email = user.email.trim().toLowerCase();
         console.log('[AUTH-MANAGER] Fetching document for:', email);
 
-        const userDoc = await window.firebaseDb.collection('userRoles').doc(email).get();
+        // [RACE CONDITION FIX] Wait for DB to be available
+        const waitForDb = (timeout = 5000) => {
+          const start = Date.now();
+          return new Promise((resolve, reject) => {
+            const check = () => {
+              if (window.firebaseDb) resolve(window.firebaseDb);
+              else if (Date.now() - start > timeout) reject(new Error('Firebase DB timeout'));
+              else setTimeout(check, 100);
+            };
+            check();
+          });
+        };
 
-        if (userDoc.exists) {
+        const db = await waitForDb();
+        
+        // [STABILITY FIX] Retry logic for Firestore
+        let userDoc = null;
+        let attempts = 0;
+        const maxAttempts = 3;
+
+        while (attempts < maxAttempts) {
+          try {
+            userDoc = await db.collection('userRoles').doc(email).get();
+            break;
+          } catch (e) {
+            attempts++;
+            console.warn(`[AUTH-MANAGER] Fetch attempt ${attempts} failed:`, e.message);
+            if (attempts >= maxAttempts) throw e;
+            await new Promise(r => setTimeout(r, 500));
+          }
+        }
+
+        if (userDoc && userDoc.exists) {
           const userData = userDoc.data();
-          this.currentUser = user;
 
           // [MASTER OVERRIDE] prioritized over Firestore permissions
           const masterAdmins = ['hasthij29@gmail.com'];
@@ -73,6 +102,9 @@
           // Safety: Main is always viewable
           this.permissions.main = 'view';
 
+          // ✅ Set currentUser AFTER permissions are built, so polling checks don't resolve early
+          this.currentUser = user;
+
           // Cache for performance
           this.cacheAuthData(email, this.userRole, this.permissions);
 
@@ -89,12 +121,6 @@
           console.warn('[AUTH-MANAGER] ❌ Firestore document missing for:', email);
           
           // [FALLBACK] Legacy Account Support
-          // If the user is authenticated but has no Firestore doc, we provide a safe fallback
-          // instead of failing. This prevents redirection loops.
-          
-          this.currentUser = user;
-          
-          // Whitelist for legacy admins (Hardcoded for emergency recovery)
           const legacyAdmins = ['hasthij29@gmail.com']; 
           
           if (legacyAdmins.includes(email)) {
@@ -107,6 +133,9 @@
 
           this.permissions = this.migrateLegacyRole(this.userRole);
           this.permissions.main = 'view'; // Always allow home page
+
+          // ✅ Set currentUser AFTER permissions are built
+          this.currentUser = user;
 
           this.cacheAuthData(email, this.userRole, this.permissions);
           
@@ -135,8 +164,12 @@
         Object.keys(perms).forEach(k => perms[k] = 'view');
       } else if (role === 'LIMITED_ACCESS_EDIT') {
         ['main', 'dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'edit');
+        perms.accounts = 'none'; // Explicitly none for limited
+        perms.central = 'none';
       } else if (role === 'LIMITED_ACCESS_VIEW') {
         ['main', 'dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'view');
+        perms.accounts = 'none';
+        perms.central = 'none';
       }
 
       return perms;

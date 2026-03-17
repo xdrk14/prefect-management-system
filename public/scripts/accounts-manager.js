@@ -659,20 +659,24 @@
     // Migrate legacy roles for local use
     migrateLegacyRole(role) {
       const perms = {
-        dashboard: 'none', central: 'none', aquila: 'none', cetus: 'none', 
-        cygnus: 'none', ursa: 'none', events: 'none', accounts: 'none'
+        main: 'view', dashboard: 'none', central: 'none', aquila: 'none', 
+        cetus: 'none', cygnus: 'none', ursa: 'none', events: 'none', accounts: 'none'
       };
 
-      if (!role) return perms; // Return all 'none' if no role
+      if (!role) return perms;
 
       if (role === 'FULL_ACCESS_EDIT') {
         Object.keys(perms).forEach(k => perms[k] = 'edit');
       } else if (role === 'FULL_ACCESS_VIEW') {
         Object.keys(perms).forEach(k => perms[k] = 'view');
       } else if (role === 'LIMITED_ACCESS_EDIT') {
-        ['dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'edit');
+        ['main', 'dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'edit');
+        perms.accounts = 'none';
+        perms.central = 'none';
       } else if (role === 'LIMITED_ACCESS_VIEW') {
-        ['dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'view');
+        ['main', 'dashboard', 'aquila', 'cetus', 'cygnus', 'ursa', 'events'].forEach(k => perms[k] = 'view');
+        perms.accounts = 'none';
+        perms.central = 'none';
       }
 
       return perms;

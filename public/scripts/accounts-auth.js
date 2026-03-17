@@ -6,36 +6,44 @@
   document.addEventListener('DOMContentLoaded', async function () {
     console.log('[ACCOUNTS-AUTH] Waiting for Auth Manager...');
     
-    // Wait for auth manager to be ready
+    // Wait for auth manager to be fully ready — meaning permissions are populated.
+    // IMPORTANT: We must wait for 'permissions' to be set, not just 'currentUser',
+    // because hasPermission() will always return false until permissions are loaded.
     const waitForAuth = () => {
         return new Promise(resolve => {
-            // If already loaded
-            if (window.authManager && window.authManager.currentUser) {
+            // Best case: already fully loaded with permissions
+            if (window.authManager && window.authManager.permissions) {
                 resolve();
                 return;
             }
-            // Listen for ready event
-            window.addEventListener('auth:ready', () => resolve(), { once: true });
+            // Listen for auth:ready event (fired after permissions are built)
+            const onReady = () => {
+                clearInterval(checkInterval);
+                resolve();
+            };
+            window.addEventListener('auth:ready', onReady, { once: true });
             
-            // Fallback: Check constantly
+            // Fallback poller: checks for permissions being set
             const checkInterval = setInterval(() => {
-                if (window.authManager && window.authManager.currentUser) {
+                if (window.authManager && window.authManager.permissions) {
                     clearInterval(checkInterval);
+                    window.removeEventListener('auth:ready', onReady);
                     resolve();
                 }
             }, 200);
 
-            // Timeout after 5 seconds to prevent hanging
+            // Timeout after 8 seconds to prevent hanging
             setTimeout(() => {
                 clearInterval(checkInterval);
+                window.removeEventListener('auth:ready', onReady);
                 resolve();
-            }, 5000);
+            }, 8000);
         });
     };
 
     await waitForAuth();
     
-    // Auth Check
+    // Auth Check — make sure we have an authenticated user
     if (!window.authManager || !window.authManager.currentUser) {
         console.warn('[ACCOUNTS-AUTH] No authenticated user found. Redirecting...');
         window.location.href = 'index.html';
@@ -44,6 +52,7 @@
 
     const email = window.authManager.currentUser.email;
     console.log('[ACCOUNTS-AUTH] Verifying permissions for:', email);
+    console.log('[ACCOUNTS-AUTH] Current permissions:', window.authManager.permissions);
 
     // Granular Permission Check
     // We check for 'view' access. 'edit' implies 'view'.
@@ -118,3 +127,4 @@
     }
   };
 })();
+

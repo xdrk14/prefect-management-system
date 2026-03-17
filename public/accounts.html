@@ -20,6 +20,11 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="../styles/stylesheet.css" />
 
+    <!-- Firebase SDKs - MUST load first, before auth scripts -->
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
+
     <!-- External Auth & Security -->
     <script src="auth/security-protection.js"></script>
     <script src="auth/firebase-config.js"></script>
@@ -230,10 +235,6 @@
         }
       }
     </style>
-    <!-- Firebase SDKs -->
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-auth-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.0.0/firebase-firestore-compat.js"></script>
 
     <script src="scripts/logoutbtn.js"></script>
     <script src="scripts/accounts-manager.js"></script>

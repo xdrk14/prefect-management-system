@@ -20,14 +20,12 @@ if (typeof window.AuditLogManager === 'undefined') {
 
   async init() {
     try {
-      // Wait for Firebase to be initialized
-      if (typeof firebase === 'undefined') {
-        console.error('Firebase not loaded');
-        return;
-      }
+      // Wait for firebase-config.js to finish its async initialization
+      // It sets window.firebaseAuth and window.firebaseDb after fetching config and calling initializeApp()
+      await this.waitForFirebase();
 
-      this.auth = firebase.auth();
-      this.db = firebase.firestore();
+      this.auth = window.firebaseAuth;
+      this.db = window.firebaseDb;
 
       // Set up event listeners only if on accounts page
       if (this.isAccountsPage) {
@@ -46,6 +44,22 @@ if (typeof window.AuditLogManager === 'undefined') {
       console.error('Error initializing audit log:', error);
       this.showError('Failed to initialize audit log system');
     }
+  }
+
+  waitForFirebase(timeout = 10000) {
+    const start = Date.now();
+    return new Promise((resolve, reject) => {
+      const check = () => {
+        if (window.firebaseAuth && window.firebaseDb) {
+          resolve();
+        } else if (Date.now() - start > timeout) {
+          reject(new Error('[AUDIT-LOG] Timed out waiting for Firebase to initialize.'));
+        } else {
+          setTimeout(check, 150);
+        }
+      };
+      check();
+    });
   }
 
   setupEventListeners() {

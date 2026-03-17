@@ -31,3 +31,5 @@ TestResults.xml
 ### Environment files (ROOT .env + variants)
 .env
 .env.*
+
+firestore.rules

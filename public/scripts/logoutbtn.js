@@ -1,9 +1,6 @@
 // Enhanced logout script with proper Firebase authentication logout, audit logging, and edit manager cache clearing
-
-// Ensure Firebase is available
-if (typeof firebase !== 'undefined') {
-  window.firebaseAuth = firebase.auth();
-}
+// NOTE: Do NOT call firebase.auth() here at top-level. Firebase isn't initialized yet.
+// window.firebaseAuth is set by firebase-config.js after async initialization.
 
 /**
  * Create and show beautiful logout confirmation modal
