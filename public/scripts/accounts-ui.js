@@ -598,6 +598,7 @@
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div class="flex space-x-2">
+                        ${window.authManager?.hasPermission('accounts', 'edit') ? `
                         <button data-action="edit" data-email="${user.email}" 
                                 class="text-blue-600 bg-blue-500/10 hover:text-white hover:bg-blue-600 p-1 rounded transition-colors duration-200"
                                 title="Edit user">
@@ -610,6 +611,7 @@
                             </svg>
                         </button>
                         ${this.createActionButton(user, isCurrentUser)}
+                        ` : '<span class="text-gray-400 italic text-xs">View Only Access</span>'}
                     </div>
                 </td>
 

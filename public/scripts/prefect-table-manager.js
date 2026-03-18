@@ -118,6 +118,11 @@ class PrefectTableManager {
     console.log('[INSTANT-AUTH] No edit permission detected');
     return false;
   }
+
+  async refreshData() {
+    console.log('[PrefectManager] Refreshing data from server...');
+    return await this.init();
+  }
   async init() {
     this.debugLog('Initializing PrefectTableManager for house:', this.house);
     try {

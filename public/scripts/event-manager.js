@@ -105,6 +105,11 @@ class EventManager {
     console.log('[SUCCESS] Event Management System initialized successfully');
   }
 
+  async refreshAllData() {
+    console.log('[EventManager] Force refreshing all data...');
+    return await this.loadInitialData();
+  }
+
   async loadInitialData() {
     try {
       this.showLoadingState();
@@ -1869,6 +1874,7 @@ let eventManager;
 // Initialize when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
   eventManager = new EventManager();
+  window.eventManager = eventManager;
 });
 
 // Global functions for HTML onclick handlers

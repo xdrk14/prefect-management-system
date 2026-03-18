@@ -216,12 +216,12 @@
 
       // Special handling for tables (hiding "More" or "Action" buttons)
       const actionButtons = document.querySelectorAll(
-         '.action-btn, .edit-btn, .delete-btn, button[onclick*="edit"], button[onclick*="delete"], .fa-edit, .fa-trash, .fa-ellipsis-v'
+         '.action-btn, .edit-btn, .delete-btn, #addUserBtn, button[onclick*="edit"], button[onclick*="delete"], button[data-action="edit"], button[data-action="delete"], .fa-edit, .fa-trash, .fa-ellipsis-v'
       );
       actionButtons.forEach(btn => {
          // Check if it's inside a navigation or harmless area
-         if (btn.closest('nav') || btn.closest('#auth-controls')) return;
-         btn.style.display = 'none';
+         if (btn.closest('nav') || btn.closest('#auth-controls') || btn.closest('.nav-menu')) return;
+         btn.style.setProperty('display', 'none', 'important');
       });
       
       // Also disable any elements with 'data-edit-only' attribute

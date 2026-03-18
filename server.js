@@ -1377,10 +1377,14 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
     res.writeHead(200, {
       'Content-Type': 'text/event-stream',
       'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no', // Disable buffering for Nginx
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Headers': 'Cache-Control',
     });
+
+    // Enable TCP keep-alive on the socket
+    req.socket.setKeepAlive(true, 30000); // 30s TCP keep-alive
 
     // Store client connection
     const clientInfo = {
@@ -1393,8 +1397,10 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
 
     connectedClients.set(userId, clientInfo);
 
+    // Initial keep-alive comment
+    res.write(': sse-connection-open\n\n');
+
     // Send initial connection confirmation
-    res.write(`event: connection\n`);
     res.write(
       `data: ${JSON.stringify({
         type: 'connected',
@@ -1412,10 +1418,12 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
     recentUpdates.forEach(update => {
       if (update.userId !== userId) {
         // Don't send client's own updates back
-        res.write(`event: ${update.type}\n`);
         res.write(`data: ${JSON.stringify(update)}\n\n`);
       }
     });
+
+    // Final write immediately to push headers through compression
+    if (typeof res.flush === 'function') res.flush();
 
     // Handle client disconnect
     req.on('close', () => {
@@ -1424,7 +1432,11 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
     });
 
     req.on('error', error => {
-      console.error(`[ERROR] SSE Error for ${userId}:`, error);
+      if (error.code === 'ECONNRESET' || error.message === 'aborted') {
+        console.log(`[CONNECT] SSE connection aborted by client: ${userId}`);
+      } else {
+        console.error(`[ERROR] SSE Error for ${userId}:`, error);
+      }
       connectedClients.delete(userId);
     });
   });
@@ -1451,14 +1463,17 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
     connectedClients.forEach((client, clientId) => {
       if (clientId !== update.userId && client.response) {
         try {
-          client.response.write(`event: ${update.type}\n`);
           client.response.write(`data: ${JSON.stringify(update)}\n\n`);
+          if (typeof client.response.flush === 'function') client.response.flush();
           client.lastPing = Date.now();
           broadcastCount++;
         } catch (error) {
           console.error(`[ERROR] Failed to send to client ${clientId}:`, error);
           connectedClients.delete(clientId);
         }
+      } else if (clientId === update.userId) {
+        // Update lastPing even for the sender so they aren't cleaned up as stale
+        client.lastPing = Date.now();
       }
     });
 
@@ -1502,17 +1517,17 @@ if (ENABLE_CLUSTER && cluster.isMaster) {
     let heartbeatsSent = 0;
     connectedClients.forEach((client, clientId) => {
       try {
-        if (client.websocket && client.websocket.readyState === 1) {
-          client.websocket.send(JSON.stringify(heartbeatData));
-          heartbeatsSent++;
-        } else if (client.response) {
-          client.response.write(`event: heartbeat\n`);
+        if (client.response) {
           client.response.write(`data: ${JSON.stringify(heartbeatData)}\n\n`);
+          if (typeof client.response.flush === 'function') client.response.flush();
           heartbeatsSent++;
         }
         client.lastPing = now;
       } catch (error) {
-        console.error(`[ERROR] Heartbeat failed for ${clientId}:`, error);
+        // Minor socket error or abort is fine to log as info instead of error
+        if (error.code !== 'ECONNRESET') {
+          console.error(`[ERROR] Heartbeat failed for ${clientId}:`, error.message);
+        }
         connectedClients.delete(clientId);
       }
     });

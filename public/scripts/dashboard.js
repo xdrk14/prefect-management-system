@@ -1648,6 +1648,9 @@ if (typeof module !== 'undefined' && module.exports) {
   };
 }
 
+// Expose for real-time updates
+window.dashboardManager = DashboardController;
+
 console.log(
   '📊 Enhanced Dashboard.js with CLEAN PDF Export loaded successfully - Ready for initialization!'
 );
